@@ -3,7 +3,6 @@ import { GameEngineWindow } from "@core/GameEngineWindow";
 import { PhysicsGameEngineComponent } from "@extensions/PhysicsEngine/PhysicsGameEngineComponent";
 import { GameObject } from "@core/GameObject";
 import { PolygonCollider } from "@extensions/PhysicsEngine/Colliders/PolygonCollider";
-import { Vector2 } from "@core/MathStructures/Vector2";
 import { ManualTicker } from "@test/ExampleBehaviors/ManualTicker";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision";
@@ -31,11 +30,11 @@ describe("PhysicsGameEngineComponent", (): void => {
   it("should emit an event from a Collider with the second Collider as param", () => {
     // First object with collider
     const object1: GameObject = new GameObject();
-    const vertices1: Vector2[] = [
-      new Vector2(-1, 2),
-      new Vector2(-1, 6),
-      new Vector2(-5, 5),
-      new Vector2(-4, 2),
+    const vertices1: Vector3[] = [
+      new Vector3(-1, 2, 0),
+      new Vector3(-1, 6, 0),
+      new Vector3(-5, 5, 0),
+      new Vector3(-4, 2, 0),
     ];
     const polygonCollider1: PolygonCollider = new PolygonCollider(vertices1);
     object1.addBehavior(polygonCollider1);
@@ -43,11 +42,11 @@ describe("PhysicsGameEngineComponent", (): void => {
 
     // Second object with collider
     const object2: GameObject = new GameObject();
-    const vertices2: Vector2[] = [
-      new Vector2(1, 2),
-      new Vector2(3, 4),
-      new Vector2(2, 6),
-      new Vector2(-2, 4),
+    const vertices2: Vector3[] = [
+      new Vector3(1, 2, 0),
+      new Vector3(3, 4, 0),
+      new Vector3(2, 6, 0),
+      new Vector3(-2, 4, 0),
     ];
     const polygonCollider2: PolygonCollider = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);
@@ -82,10 +81,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // First object with collider
     const object1 = new GameObject();
     const vertices1 = [
-      new Vector2(-1, 2),
-      new Vector2(-1, 6),
-      new Vector2(-5, 5),
-      new Vector2(-4, 2),
+      new Vector3(-1, 2, 0),
+      new Vector3(-1, 6, 0),
+      new Vector3(-5, 5, 0),
+      new Vector3(-4, 2, 0),
     ];
     const polygonCollider1 = new PolygonCollider(vertices1);
     object1.addBehavior(polygonCollider1);
@@ -94,10 +93,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Second object with collider
     const object2 = new GameObject();
     const vertices2 = [
-      new Vector2(1, 2),
-      new Vector2(3, 4),
-      new Vector2(2, 6),
-      new Vector2(0, 4),
+      new Vector3(1, 2, 0),
+      new Vector3(3, 4, 0),
+      new Vector3(2, 6, 0),
+      new Vector3(0, 4, 0),
     ];
     const polygonCollider2 = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);
@@ -125,10 +124,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // First object with collider
     const object1 = new GameObject();
     const vertices1 = [
-      new Vector2(0, 5),
-      new Vector2(8, 5),
-      new Vector2(11, 16),
-      new Vector2(12, 20),
+      new Vector3(0, 5, 0),
+      new Vector3(8, 5, 0),
+      new Vector3(11, 16, 0),
+      new Vector3(12, 20, 0),
     ];
     const polygonCollider1 = new PolygonCollider(vertices1);
     object1.addBehavior(polygonCollider1);
@@ -136,7 +135,11 @@ describe("PhysicsGameEngineComponent", (): void => {
 
     // Second object with collider
     const object2 = new GameObject();
-    const vertices2 = [new Vector2(4, 0), new Vector2(6, 5), new Vector2(0, 4)];
+    const vertices2 = [
+      new Vector3(4, 0, 0),
+      new Vector3(6, 5, 0),
+      new Vector3(0, 4, 0),
+    ];
     const polygonCollider2 = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);
     gameEngineWindow.root.addChild(object2);
@@ -144,10 +147,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Third object with collider
     const object3 = new GameObject();
     const vertices3 = [
-      new Vector2(5, 0),
-      new Vector2(15, 1),
-      new Vector2(11, 12),
-      new Vector2(7, 8),
+      new Vector3(5, 0, 0),
+      new Vector3(15, 1, 0),
+      new Vector3(11, 12, 0),
+      new Vector3(7, 8, 0),
     ];
     const polygonCollider3 = new PolygonCollider(vertices3);
     object3.addBehavior(polygonCollider3);
@@ -156,11 +159,11 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Fourth object with collider
     const object4 = new GameObject();
     const vertices4 = [
-      new Vector2(11, 10),
-      new Vector2(15, 2),
-      new Vector2(20, 4),
-      new Vector2(20, 8),
-      new Vector2(14, 13),
+      new Vector3(11, 10, 0),
+      new Vector3(15, 2, 0),
+      new Vector3(20, 4, 0),
+      new Vector3(20, 8, 0),
+      new Vector3(14, 13, 0),
     ];
     const polygonCollider4 = new PolygonCollider(vertices4);
     object4.addBehavior(polygonCollider4);
@@ -169,11 +172,11 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Fifth object with collider
     const object5 = new GameObject();
     const vertices5 = [
-      new Vector2(10, 13),
-      new Vector2(17, 10),
-      new Vector2(19, 15),
-      new Vector2(18, 17),
-      new Vector2(12, 16),
+      new Vector3(10, 13, 0),
+      new Vector3(17, 10, 0),
+      new Vector3(19, 15, 0),
+      new Vector3(18, 17, 0),
+      new Vector3(12, 16, 0),
     ];
     const polygonCollider5 = new PolygonCollider(vertices5);
     object5.addBehavior(polygonCollider5);
@@ -242,10 +245,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // First object with collider
     const object1 = new GameObject();
     const vertices1 = [
-      new Vector2(0, 5),
-      new Vector2(5, 6),
-      new Vector2(11, 16),
-      new Vector2(12, 20),
+      new Vector3(0, 5, 0),
+      new Vector3(5, 6, 0),
+      new Vector3(11, 16, 0),
+      new Vector3(12, 20, 0),
     ];
     const polygonCollider1 = new PolygonCollider(vertices1);
     object1.addBehavior(polygonCollider1);
@@ -253,7 +256,11 @@ describe("PhysicsGameEngineComponent", (): void => {
 
     // Second object with collider
     const object2 = new GameObject();
-    const vertices2 = [new Vector2(4, 0), new Vector2(6, 5), new Vector2(0, 4)];
+    const vertices2 = [
+      new Vector3(4, 0, 0),
+      new Vector3(6, 5, 0),
+      new Vector3(0, 4, 0),
+    ];
     const polygonCollider2 = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);
     gameEngineWindow.root.addChild(object2);
@@ -261,10 +268,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Third object with collider
     const object3 = new GameObject();
     const vertices3 = [
-      new Vector2(5, 0),
-      new Vector2(15, 1),
-      new Vector2(11, 12),
-      new Vector2(7, 8),
+      new Vector3(5, 0, 0),
+      new Vector3(15, 1, 0),
+      new Vector3(11, 12, 0),
+      new Vector3(7, 8, 0),
     ];
     const polygonCollider3 = new PolygonCollider(vertices3);
     object3.addBehavior(polygonCollider3);
@@ -273,11 +280,11 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Fourth object with collider
     const object4 = new GameObject();
     const vertices4 = [
-      new Vector2(12, 10),
-      new Vector2(15, 2),
-      new Vector2(20, 4),
-      new Vector2(20, 8),
-      new Vector2(14, 11),
+      new Vector3(12, 10, 0),
+      new Vector3(15, 2, 0),
+      new Vector3(20, 4, 0),
+      new Vector3(20, 8, 0),
+      new Vector3(14, 11, 0),
     ];
     const polygonCollider4 = new PolygonCollider(vertices4);
     object4.addBehavior(polygonCollider4);
@@ -286,11 +293,11 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Fifth object with collider
     const object5 = new GameObject();
     const vertices5 = [
-      new Vector2(10, 13),
-      new Vector2(17, 10),
-      new Vector2(19, 15),
-      new Vector2(18, 17),
-      new Vector2(12, 16),
+      new Vector3(10, 13, 0),
+      new Vector3(17, 10, 0),
+      new Vector3(19, 15, 0),
+      new Vector3(18, 17, 0),
+      new Vector3(12, 16, 0),
     ];
     const polygonCollider5 = new PolygonCollider(vertices5);
     object5.addBehavior(polygonCollider5);
@@ -338,10 +345,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // First object with collider
     const object1 = new GameObject();
     const vertices1 = [
-      new Vector2(-1, 2),
-      new Vector2(-1, 6),
-      new Vector2(-5, 5),
-      new Vector2(-4, 2),
+      new Vector3(-1, 2, 0),
+      new Vector3(-1, 6, 0),
+      new Vector3(-5, 5, 0),
+      new Vector3(-4, 2, 0),
     ];
     const polygonCollider1 = new PolygonCollider(vertices1);
     object1.addBehavior(polygonCollider1);
@@ -350,10 +357,10 @@ describe("PhysicsGameEngineComponent", (): void => {
     // Second object with collider
     const object2 = new GameObject();
     const vertices2 = [
-      new Vector2(1, 2),
-      new Vector2(3, 4),
-      new Vector2(2, 6),
-      new Vector2(0, 4),
+      new Vector3(1, 2, 0),
+      new Vector3(3, 4, 0),
+      new Vector3(2, 6, 0),
+      new Vector3(0, 4, 0),
     ];
     const polygonCollider2 = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);

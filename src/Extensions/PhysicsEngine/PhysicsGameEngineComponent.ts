@@ -7,7 +7,7 @@ import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
 import { SatCollisionHandler } from "@extensions/PhysicsEngine/CollisionHandlers/SatCollisionHandler.ts";
 import { Ticker } from "@core/Tickers/Ticker.ts";
 import { ArrayUtility } from "@core/Utilities/ArrayUtility.ts";
-import { Vector2 } from "@core/MathStructures/Vector2.ts";
+import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { MathUtility } from "@core/MathStructures/MathUtility.ts";
 import { Rigidbody } from "@extensions/PhysicsEngine/Rigidbodies/Rigidbody.ts";
 
@@ -19,7 +19,7 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
   public satCollisionHandler: SatCollisionHandler = new SatCollisionHandler();
   private _ticker: Ticker;
   private _collidersCollisions: Map<Collider, Collision[]> = new Map();
-  public gravity: Vector2 = new Vector2(0, -9.81);
+  public gravity: Vector3 = new Vector3(0, -9.81, 0);
   public minIterationPerTick: number = 1;
   public maxIterationPerTick: number = 128;
 

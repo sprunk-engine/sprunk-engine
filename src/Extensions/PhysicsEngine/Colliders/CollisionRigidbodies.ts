@@ -2,14 +2,13 @@ import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
 import { Rigidbody } from "@extensions/PhysicsEngine/Rigidbodies/Rigidbody.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
-import { Vector2 } from "@core/MathStructures/Vector2.ts";
 
 /**
  * Represents a collision between two rigidbodies from the POV of one og them.
  */
 export class CollisionRigidbodies extends Collision {
   private _magnitude: number;
-  private _relativeVelocity: Vector2;
+  private _relativeVelocity: Vector3;
   private _restitution: number;
 
   get magnitude(): number {
@@ -20,7 +19,7 @@ export class CollisionRigidbodies extends Collision {
     return this._restitution;
   }
 
-  get relativeVeocity(): Vector2 {
+  get relativeVelocity(): Vector3 {
     return this._relativeVelocity;
   }
 
@@ -30,7 +29,7 @@ export class CollisionRigidbodies extends Collision {
     currentCollider: Collider,
     otherCollider: Collider,
     magnitude?: number,
-    relativeVelocity?: Vector2,
+    relativeVelocity?: Vector3,
   ) {
     if (!otherCollider.rigidbody || !currentCollider.rigidbody) {
       throw new Error(
@@ -55,7 +54,7 @@ export class CollisionRigidbodies extends Collision {
   private computeRelativeVelocity(
     rigidA: Rigidbody,
     rigidB: Rigidbody,
-  ): Vector2 {
+  ): Vector3 {
     return rigidB.linearVelocity.clone().sub(rigidA.linearVelocity);
   }
 
@@ -67,7 +66,7 @@ export class CollisionRigidbodies extends Collision {
   public computeMagnitude(rigidA: Rigidbody, rigidB: Rigidbody): number {
     return (
       (-(1 + this._restitution) *
-        this._relativeVelocity.dotProduct(this.normal.clone().toVector2())) /
+        this._relativeVelocity.dotProduct(this.normal.clone())) /
       (1 / rigidB.mass + 1 / rigidA.mass)
     );
   }

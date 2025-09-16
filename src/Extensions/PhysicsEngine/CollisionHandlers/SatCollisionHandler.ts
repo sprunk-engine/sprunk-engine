@@ -1,6 +1,5 @@
 import { PolygonCollider } from "@extensions/PhysicsEngine/Colliders/PolygonCollider.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
-import { Vector2 } from "@core/MathStructures/Vector2.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { CollisionHandler } from "@extensions/PhysicsEngine/CollisionHandlers/CollisionHandler.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
@@ -15,11 +14,11 @@ export class SatCollisionHandler implements CollisionHandler {
    * Helper function to calculate projection of vertices onto an axis
    */
   private projectVertices(
-    vertices: Vector2[],
-    axis: Vector2,
+    vertices: Vector3[],
+    axis: Vector3,
   ): { min: number; max: number } {
     const projections: number[] = vertices.reduce(
-      (projections: number[], vertex: Vector2) => {
+      (projections: number[], vertex: Vector3) => {
         projections.push(axis.dotProduct(vertex));
         return projections;
       },
@@ -32,12 +31,12 @@ export class SatCollisionHandler implements CollisionHandler {
   /**
    * Helper function to get the axes of a polygon (perpendicular vectors to the edges of the polygon)
    */
-  private getSATAxes(vertices: Vector2[]): Vector2[] {
-    return vertices.reduce((axes: Vector2[], vertex: Vector2, i: number) => {
-      const edge: Vector2 = vertices[(i + 1) % vertices.length]
+  private getSATAxes(vertices: Vector3[]): Vector3[] {
+    return vertices.reduce((axes: Vector3[], vertex: Vector3, i: number) => {
+      const edge: Vector3 = vertices[(i + 1) % vertices.length]
         .clone()
         .sub(vertex);
-      axes.push(new Vector2(-edge.y, edge.x).normalize());
+      axes.push(new Vector3(-edge.y, edge.x, 0).normalize());
       return axes;
     }, []);
   }
@@ -62,11 +61,11 @@ export class SatCollisionHandler implements CollisionHandler {
     let depth: number | undefined;
 
     // Get transformed vertices
-    const verticesA: Vector2[] = a.getVerticesWithTransform();
-    const verticesB: Vector2[] = b.getVerticesWithTransform();
+    const verticesA: Vector3[] = a.getVerticesWithTransform();
+    const verticesB: Vector3[] = b.getVerticesWithTransform();
 
     // Get all axes to test (edges of both polygons)
-    const axes: Vector2[] = [
+    const axes: Vector3[] = [
       ...this.getSATAxes(verticesA),
       ...this.getSATAxes(verticesB),
     ];
@@ -100,7 +99,7 @@ export class SatCollisionHandler implements CollisionHandler {
       // Keep the smallest depth and normal throughout the iterations
       if (depth === undefined || axisDepth < depth) {
         depth = axisDepth;
-        normal = axis.toVector3();
+        normal = axis;
       }
     }
 

@@ -1,4 +1,4 @@
-import { Vector2 } from "@core/MathStructures/Vector2.ts";
+import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
 import { LogicBehavior } from "@core/LogicBehavior.ts";
@@ -11,8 +11,8 @@ import { CollisionRigidbodies } from "@extensions/PhysicsEngine/Colliders/Collis
  */
 export class Rigidbody extends LogicBehavior<void> {
   public mass: number;
-  private _force: Vector2 = new Vector2(0, 0);
-  private _linearVelocity: Vector2 = new Vector2(0, 0);
+  private _force: Vector3 = new Vector3(0, 0, 0);
+  private _linearVelocity: Vector3 = new Vector3(0, 0, 0);
   private _angularVelocity: number = 0; // rad/s
   private _restitution: number = 0.5;
   private _collider: Collider;
@@ -25,11 +25,11 @@ export class Rigidbody extends LogicBehavior<void> {
     return this._restitution;
   }
 
-  public get linearVelocity(): Vector2 {
+  public get linearVelocity(): Vector3 {
     return this._linearVelocity;
   }
 
-  public set linearVelocity(value: Vector2) {
+  public set linearVelocity(value: Vector3) {
     this._linearVelocity = value;
   }
 
@@ -74,12 +74,9 @@ export class Rigidbody extends LogicBehavior<void> {
       collision.normal
         .clone()
         .scale(
-          this._linearVelocity.dotProduct(
-            collision.normal.clone().toVector2(),
-          ) *
+          this._linearVelocity.dotProduct(collision.normal.clone()) *
             (1 + this.restitution ** 2),
-        )
-        .toVector2(),
+        ),
     );
   }
 
@@ -93,10 +90,7 @@ export class Rigidbody extends LogicBehavior<void> {
     );
 
     this._linearVelocity.sub(
-      collision.normal
-        .clone()
-        .scale(collision.magnitude / this.mass)
-        .toVector2(),
+      collision.normal.clone().scale(collision.magnitude / this.mass),
     );
   }
 
@@ -104,7 +98,7 @@ export class Rigidbody extends LogicBehavior<void> {
    * Add to the instantaneous force of the collider
    * @param force
    */
-  public addForce(force: Vector2): void {
+  public addForce(force: Vector3): void {
     this._force.add(force);
   }
 
@@ -113,9 +107,9 @@ export class Rigidbody extends LogicBehavior<void> {
    * @param deltaTime
    * @param gravity
    */
-  public step(deltaTime: number, gravity: Vector2): void {
+  public step(deltaTime: number, gravity: Vector3): void {
     // Compute the acceleration from the forces
-    const acceleration: Vector2 = this._force.clone().scale(1 / this.mass);
+    const acceleration: Vector3 = this._force.clone().scale(1 / this.mass);
     acceleration.add(gravity);
 
     // Move position
@@ -123,7 +117,7 @@ export class Rigidbody extends LogicBehavior<void> {
       .clone()
       .scale(deltaTime)
       .add(acceleration.clone().scale(deltaTime ** 2 / 2));
-    this.gameObject.transform.position.add(newPosition.toVector3());
+    this.gameObject.transform.position.add(newPosition);
 
     // Rotate
     const rotationQuaternion: Quaternion = MathUtility.radToQuaternion(
@@ -136,6 +130,6 @@ export class Rigidbody extends LogicBehavior<void> {
     if (this._linearVelocity.x > -0.00001 && this._linearVelocity.x < 0.00001)
       this._linearVelocity.x = 0;
 
-    this._force = new Vector2(0, 0); // reset in order to apply force by addForce() only
+    this._force = new Vector3(0, 0, 0); // reset in order to apply force by addForce() only
   }
 }

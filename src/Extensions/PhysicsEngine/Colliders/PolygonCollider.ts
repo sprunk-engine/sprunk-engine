@@ -1,4 +1,3 @@
-import { Vector2 } from "@core/MathStructures/Vector2.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
 
@@ -6,9 +5,9 @@ import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
  * PolygonCollider class is a collider that represents a polygon shape
  */
 export class PolygonCollider extends Collider {
-  public vertices: Vector2[];
+  public vertices: Vector3[];
 
-  constructor(vertices: Vector2[]) {
+  constructor(vertices: Vector3[]) {
     super();
     this.vertices = vertices;
   }
@@ -65,25 +64,19 @@ export class PolygonCollider extends Collider {
   /**
    * Get the vertices of the polygon with the transform of the game object
    */
-  public getVerticesWithTransform(): Vector2[] {
-    return this.vertices.reduce(
-      (computedVertices: Vector2[], vertex: Vector2) => {
-        // Extract Z-axis rotation (yaw) from the quaternion
-        const eulerAngles =
-          this.gameObject.transform.worldRotation.toEulerAngles();
-        const zRotation = eulerAngles.z; // Z-axis rotation in radians
+  public getVerticesWithTransform(): Vector3[] {
+    const transformedVertices: Vector3[] = [];
 
-        // Apply world scale, Z-axis rotation, and world position
-        const transformedVertex = vertex
+    this.vertices.forEach((vertex) => {
+      transformedVertices.push(
+        vertex
           .clone()
-          .scaleAxis(this.gameObject.transform.worldScale.toVector2()) // Apply world scale (2D)
-          .rotate(zRotation) // Apply Z-axis rotation (2D)
-          .add(this.gameObject.transform.worldPosition.toVector2()); // Apply world position (2D)
+          .scaleAxis(this.gameObject.transform.worldScale) // Apply world scale
+          .rotate(this.gameObject.transform.worldRotation) // Apply world rotation
+          .add(this.gameObject.transform.worldPosition), // Apply world position
+      );
+    });
 
-        computedVertices.push(transformedVertex);
-        return computedVertices;
-      },
-      [],
-    );
+    return transformedVertices;
   }
 }

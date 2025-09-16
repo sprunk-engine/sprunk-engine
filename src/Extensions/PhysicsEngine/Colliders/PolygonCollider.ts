@@ -6,6 +6,7 @@ import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
  */
 export class PolygonCollider extends Collider {
   public vertices: Vector3[];
+  public computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
     super();
@@ -59,6 +60,30 @@ export class PolygonCollider extends Collider {
     if (centroidY == -0) centroidY = 0;
 
     return new Vector3(centroidX, centroidY, 0);
+  }
+
+  /**
+   * Get the the longest vertex from the gravitation center
+   */
+  public getLongestVertexFromCenter(): Vector3 {
+    if (this.computedLongestVertexFromGravityCenter) {
+      return this.computedLongestVertexFromGravityCenter;
+    }
+
+    const center = this.getGravitationCenter();
+    let longestDistance = 0;
+    let longestVertex = center;
+
+    this.vertices.forEach((vertex) => {
+      const distance = vertex.clone().sub(center);
+      if (distance.length > longestDistance) {
+        longestDistance = distance.length;
+        longestVertex = vertex;
+      }
+    });
+
+    this.computedLongestVertexFromGravityCenter = longestVertex;
+    return longestVertex;
   }
 
   /**

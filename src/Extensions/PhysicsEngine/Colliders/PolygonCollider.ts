@@ -6,11 +6,15 @@ import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
  */
 export class PolygonCollider extends Collider {
   public vertices: Vector3[];
-  public computedLongestVertexFromGravityCenter?: Vector3;
+  private _computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
     super();
     this.vertices = vertices;
+  }
+
+  get computedLongestVertexFromGravityCenter(): Vector3 | undefined {
+    return this._computedLongestVertexFromGravityCenter;
   }
 
   /**
@@ -82,7 +86,7 @@ export class PolygonCollider extends Collider {
       }
     });
 
-    this.computedLongestVertexFromGravityCenter = longestVertex;
+    this._computedLongestVertexFromGravityCenter = longestVertex;
     return longestVertex;
   }
 

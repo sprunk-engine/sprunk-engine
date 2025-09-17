@@ -122,6 +122,32 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
     }
   }
 
+  /**
+   * Broad phase collision detection to avoid unnecessary precise collision checks by checking if the two colliders are close from each other
+   * @param colliderA
+   * @param colliderB
+   * @private
+   */
+  private areCloseFromEachOther(
+    colliderA: PolygonCollider,
+    colliderB: PolygonCollider,
+  ): boolean {
+    // Get the distance between the two colliders' centers
+    const worldA = colliderA.getWorldPosition();
+    const worldB = colliderB.getWorldPosition();
+    const distanceFromCenters = worldA.clone().sub(worldB).length;
+
+    // Get the longest vertex from the center for both colliders
+    const aWidth =
+      colliderA.computedLongestVertexFromGravityCenter?.length || 0;
+    const bWidth =
+      colliderB.computedLongestVertexFromGravityCenter?.length || 0;
+    const sumWidths = aWidth + bWidth;
+
+    // Check the precision with 5 decimal points to avoid float precision issues
+    return Math.round((distanceFromCenters - sumWidths) * 10000) <= 10000;
+  }
+
   private tick(deltaTime: number): void {
     const colliders: Collider[] = this.getAllPolygonCollider();
 
@@ -129,7 +155,20 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
     this.resolveRidibodiesForces(colliders, deltaTime);
 
     // Check for collisions
+    let pairsOfCollidersCloseFromEachOther: Collider[][] = [];
+    // broad phase
     ArrayUtility.combinations(colliders, 2).forEach((polygonsPair) => {
+      const areClose = this.areCloseFromEachOther(
+        ...(polygonsPair as [PolygonCollider, PolygonCollider]),
+      );
+      if (areClose) {
+        pairsOfCollidersCloseFromEachOther.push(polygonsPair);
+      }
+    });
+
+    // TODO: delegate narrow phase to webGPU or webWorker
+    // narrow phase
+    pairsOfCollidersCloseFromEachOther.forEach((polygonsPair) => {
       this.getPolygonColliderCollisions(
         ...(polygonsPair as [PolygonCollider, PolygonCollider]),
       );

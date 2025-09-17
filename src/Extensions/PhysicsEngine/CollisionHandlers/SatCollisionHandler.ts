@@ -108,13 +108,10 @@ export class SatCollisionHandler implements CollisionHandler {
     // Calculate a vector from the center of A to the center of B
     const worldCenterA: Vector3 = a
       .getGravitationCenter()
-      //TODO : DO NOT USE .gameobject protected property. This is an architecture smell.
-      // @ts-ignore
-      .add(a.gameObject.transform.worldPosition);
+      .add(a.getWorldPosition());
     const worldCenterB: Vector3 = b
       .getGravitationCenter()
-      // @ts-ignore
-      .add(b.gameObject.transform.worldPosition);
+      .add(b.getWorldPosition());
 
     // Adjust the normal direction if necessary
     if (worldCenterB.sub(worldCenterA).dotProduct(normal!) < 0) {

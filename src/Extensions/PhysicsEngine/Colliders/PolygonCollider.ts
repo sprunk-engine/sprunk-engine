@@ -15,15 +15,6 @@ export class PolygonCollider extends Collider {
 
   /**
    * Get the gravitation center of the polygon
-   *
-   * @description
-   * ### The centroid \( (C_x, C_y) \) of a polygon is given by:
-   * - $C_x = \frac{1}{6A} \sum_{i=1}^{n} (x_i + x_{i+1})(x_i y_{i+1} - x_{i+1} y_i)$
-   * - $C_y = \frac{1}{6A} \sum_{i=1}^{n} (y_i + y_{i+1})(x_i y_{i+1} - x_{i+1} y_i)$
-   * ### Where:
-   * - $A$ is the area of the polygon.
-   * - $(x_i, y_i)$ are the coordinates of the vertices.
-   * - $n$ is the number of vertices.
    */
   public getGravitationCenter(): Vector3 {
     let area = 0;
@@ -31,35 +22,31 @@ export class PolygonCollider extends Collider {
     let centroidY = 0;
 
     for (let i = 0; i < this.vertices.length; i++) {
-      // Get the current vertex
       const x1 = this.vertices[i].x;
       const y1 = this.vertices[i].y;
-
-      // Get the next vertex
       const x2 = this.vertices[(i + 1) % this.vertices.length].x;
       const y2 = this.vertices[(i + 1) % this.vertices.length].y;
 
-      const crossProduct = x1 * y2 - x2 * y1;
+      const cross = x1 * y2 - x2 * y1;
 
-      // Add the cross product to the total area
-      area += crossProduct;
-
-      // Calculate the contribution of the current edge to the centroid's x and y coordinates
-      // This is based on the weighted average of the vertices
-      centroidX += (x1 + x2) * crossProduct;
-      centroidY += (y1 + y2) * crossProduct;
+      area += cross;
+      centroidX += (x1 + x2) * cross;
+      centroidY += (y1 + y2) * cross;
     }
 
-    area /= 2;
+    area *= 0.5;
 
-    // Normalize the centroid coordinates by dividing by 6 times the area (part of mathematical formula)
     centroidX /= 6 * area;
     centroidY /= 6 * area;
 
-    if (centroidX == -0) centroidX = 0;
-    if (centroidY == -0) centroidY = 0;
+    // Pour Z : comme tes sommets sont coplanaires, on peut juste faire la moyenne
+    let centroidZ = 0;
+    for (const v of this.vertices) {
+      centroidZ += v.z;
+    }
+    centroidZ /= this.vertices.length;
 
-    return new Vector3(centroidX, centroidY, 0);
+    return new Vector3(centroidX, centroidY, centroidZ);
   }
 
   /**

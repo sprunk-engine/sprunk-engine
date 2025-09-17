@@ -1,7 +1,4 @@
-import { describe, it, expect, vi, Mock, beforeEach } from "vitest";
-import { GameObject } from "@core/GameObject";
-
-import { Vector2 } from "@core/MathStructures/Vector2";
+import { describe, it, expect } from "vitest";
 import { Vector3 } from "@core/MathStructures/Vector3";
 import { PolygonCollider } from "@extensions/PhysicsEngine/Colliders/PolygonCollider";
 import { PolygonCollider } from "@extensions/PhysicsEngine/Colliders/PolygonCollider";
@@ -17,17 +14,17 @@ describe("Collider", (): void => {
     const gameEngineWindow = new GameEngineWindow(manualTicker);
 
     // Given
-    const vertices: Vector2[] = [
-      new Vector2(-1, -1),
-      new Vector2(-1, 3),
-      new Vector2(3, 3),
-      new Vector2(3, -1),
+    const vertices: Vector3[] = [
+      new Vector3(-1, -1, 2),
+      new Vector3(-1, 3, 2),
+      new Vector3(3, 3, 0),
+      new Vector3(3, -1, 0),
     ];
     const polygonCollider: PolygonCollider = new PolygonCollider(vertices);
 
     // When
-    const center: Vector2 = polygonCollider.getGravitationCenter();
-    const expectedCenter: Vector2 = new Vector3(1, 1, 0);
+    const center: Vector3 = polygonCollider.getGravitationCenter();
+    const expectedCenter: Vector3 = new Vector3(1, 1, 1);
 
     // Then
     expect(center).toStrictEqual(expectedCenter);
@@ -41,21 +38,21 @@ describe("Collider", (): void => {
     const gameEngineWindow = new GameEngineWindow(manualTicker);
 
     // Given
-    const vertices: Vector2[] = [
-      new Vector2(-1, -1),
-      new Vector2(-1, 3),
-      new Vector2(1, 3),
-      new Vector2(2, 3),
-      new Vector2(3, 3),
-      new Vector2(3, 2),
-      new Vector2(3, 1),
-      new Vector2(3, -1),
+    const vertices: Vector3[] = [
+      new Vector3(-1, -1, -4),
+      new Vector3(-1, 3, 0),
+      new Vector3(1, 3, 1),
+      new Vector3(2, 3, 2),
+      new Vector3(3, 3, 1),
+      new Vector3(3, 2, -3),
+      new Vector3(3, 1, 1),
+      new Vector3(3, -1, 9),
     ];
     const polygonCollider: PolygonCollider = new PolygonCollider(vertices);
 
     // When
-    const center: Vector2 = polygonCollider.getGravitationCenter();
-    const expectedCenter: Vector2 = new Vector3(1, 1, 0);
+    const center: Vector3 = polygonCollider.getGravitationCenter();
+    const expectedCenter: Vector3 = new Vector3(1, 1, 0.875);
 
     // Then
     expect(center).toStrictEqual(expectedCenter);

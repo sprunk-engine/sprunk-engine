@@ -13,10 +13,6 @@ export class PolygonCollider extends Collider {
     this.vertices = vertices;
   }
 
-  get computedLongestVertexFromGravityCenter(): Vector3 | undefined {
-    return this._computedLongestVertexFromGravityCenter;
-  }
-
   /**
    * Get the gravitation center of the polygon
    *
@@ -70,17 +66,17 @@ export class PolygonCollider extends Collider {
    * Get the the longest vertex from the gravitation center
    */
   public getLongestVertexFromCenter(): Vector3 {
-    if (this.computedLongestVertexFromGravityCenter) {
-      return this.computedLongestVertexFromGravityCenter;
+    if (this._computedLongestVertexFromGravityCenter) {
+      return this._computedLongestVertexFromGravityCenter;
     }
 
     const center = this.getGravitationCenter();
-    let longestDistance = 0;
+    let longestDistance: number | undefined = undefined;
     let longestVertex = center;
 
     this.vertices.forEach((vertex) => {
       const distance = vertex.clone().sub(center);
-      if (distance.length > longestDistance) {
+      if (longestDistance === undefined || distance.length > longestDistance) {
         longestDistance = distance.length;
         longestVertex = vertex;
       }

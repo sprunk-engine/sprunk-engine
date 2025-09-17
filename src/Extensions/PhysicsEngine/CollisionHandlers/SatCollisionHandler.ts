@@ -5,6 +5,8 @@ import { CollisionHandler } from "@extensions/PhysicsEngine/CollisionHandlers/Co
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
 import { CollisionFactory } from "@extensions/PhysicsEngine/Colliders/CollisionFactory.ts";
 
+// TODO: check the 3D collision
+
 /**
  * SatCollisionHandler class is a collision handler that uses the Separating Axis Theorem (SAT) to check for collisions
  * Colliders MUST be convex!!

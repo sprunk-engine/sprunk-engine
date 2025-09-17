@@ -138,10 +138,8 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
     const distanceFromCenters = worldA.clone().sub(worldB).length;
 
     // Get the longest vertex from the center for both colliders
-    const aWidth =
-      colliderA.computedLongestVertexFromGravityCenter?.length || 0;
-    const bWidth =
-      colliderB.computedLongestVertexFromGravityCenter?.length || 0;
+    const aWidth = colliderA.getLongestVertexFromCenter().length;
+    const bWidth = colliderB.getLongestVertexFromCenter().length;
     const sumWidths = aWidth + bWidth;
 
     // Check the precision with 5 decimal points to avoid float precision issues

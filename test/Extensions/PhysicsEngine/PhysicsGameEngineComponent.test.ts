@@ -336,4 +336,47 @@ describe("PhysicsGameEngineComponent", (): void => {
     expect(collideWithCollider4.length).toBe(0);
     expect(collideWithCollider5.length).toBe(0);
   });
+
+  /**
+   * Tests if a PhysicsGameEngineComponent does not trigger collision if there is not (only z is not matching).
+   */
+  it("should not emit an event from a Collider when z is not colliding", () => {
+    // First object with collider
+    const object1 = new GameObject();
+    const vertices1 = [
+      new Vector3(-1, 2, 1),
+      new Vector3(-1, 6, 1),
+      new Vector3(-5, 5, 2),
+      new Vector3(-4, 2, 3),
+    ];
+    const polygonCollider1 = new PolygonCollider(vertices1);
+    object1.addBehavior(polygonCollider1);
+    gameEngineWindow.root.addChild(object1);
+
+    // Second object with collider
+    const object2 = new GameObject();
+    const vertices2 = [
+      new Vector3(-1, 2, -2),
+      new Vector3(-1, 6, -2),
+      new Vector3(-5, 5, -1),
+      new Vector3(-4, 2, 0),
+    ];
+    const polygonCollider2 = new PolygonCollider(vertices2);
+    object2.addBehavior(polygonCollider2);
+    gameEngineWindow.root.addChild(object2);
+
+    const collideWithCollider2: Collider[] = [];
+
+    // Attach observer
+    polygonCollider2.onDataChanged.addObserver((data) =>
+      observer(data, collideWithCollider2),
+    );
+
+    // Fire the event
+    gameEngineWindow.addGameComponent(physicsGameEngineComponent);
+    manualTicker.tick(1);
+
+    // Assert the result
+    expect(collideWithCollider2.length).toBe(0);
+  });
 });

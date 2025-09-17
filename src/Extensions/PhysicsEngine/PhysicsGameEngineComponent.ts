@@ -146,13 +146,7 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
     return Math.round((distanceFromCenters - sumWidths) * 10000) <= 10000;
   }
 
-  private tick(deltaTime: number): void {
-    const colliders: Collider[] = this.getAllPolygonCollider();
-
-    // stat by resolving the forces on rigidbodies
-    this.resolveRidibodiesForces(colliders, deltaTime);
-
-    // Check for collisions
+  private detectCollisions(colliders: Collider[]): void {
     let pairsOfCollidersCloseFromEachOther: Collider[][] = [];
     // broad phase
     ArrayUtility.combinations(colliders, 2).forEach((polygonsPair) => {
@@ -171,6 +165,16 @@ export class PhysicsGameEngineComponent extends GameEngineComponent {
         ...(polygonsPair as [PolygonCollider, PolygonCollider]),
       );
     });
+  }
+
+  private tick(deltaTime: number): void {
+    const colliders: Collider[] = this.getAllPolygonCollider();
+
+    // stat by resolving the forces on rigidbodies
+    this.resolveRidibodiesForces(colliders, deltaTime);
+
+    // Check for collisions
+    this.detectCollisions(colliders);
 
     // Resolve collisions
     this._collidersCollisions.forEach(

@@ -15,4 +15,9 @@ export interface ShapedCollider {
    * Get the gravitation center of the polygon
    */
   getGravitationCenter(): Vector3;
+
+  /**
+   * Get the world position of the collider
+   */
+  getWorldPosition(): Vector3;
 }

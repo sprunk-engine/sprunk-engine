@@ -1,11 +1,11 @@
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
-import { IShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
+import { ShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
 
 /**
  * PolygonCollider class is a collider that represents a polygon shape
  */
-export class PolygonCollider extends Collider implements IShapedCollider {
+export class PolygonCollider extends Collider implements ShapedCollider {
   public vertices: Vector3[];
   private _computedLongestVertexFromGravityCenter?: Vector3;
 
@@ -29,9 +29,6 @@ export class PolygonCollider extends Collider implements IShapedCollider {
     return supportPoint;
   }
 
-  /**
-   * Get the gravitation center of the polygon
-   */
   public getGravitationCenter(): Vector3 {
     let area = 0;
     let centroidX = 0;

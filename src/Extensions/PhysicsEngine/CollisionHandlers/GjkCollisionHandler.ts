@@ -1,9 +1,12 @@
 import { CollisionHandler } from "./CollisionHandler";
-import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
+import { ShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
 
 export class GjkCollisionHandler implements CollisionHandler {
-  areColliding(a: Collider, b: Collider): Collision | null {
+  areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null {
+    const centerA = a.getGravitationCenter();
+    const centerB = b.getGravitationCenter();
+
     return null; // Placeholder return
   }
 }

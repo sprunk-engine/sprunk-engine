@@ -1,5 +1,5 @@
 import { PolygonCollider } from "@extensions/PhysicsEngine/Colliders/PolygonCollider.ts";
-import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
+import { ShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { CollisionHandler } from "@extensions/PhysicsEngine/CollisionHandlers/CollisionHandler.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
@@ -43,7 +43,7 @@ export class SatCollisionHandler implements CollisionHandler {
     }, []);
   }
 
-  public areColliding(a: Collider, b: Collider): Collision | null {
+  public areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null {
     if (a instanceof PolygonCollider && b instanceof PolygonCollider) {
       return this.areCollidingPolygonToPolygon(a, b);
     }

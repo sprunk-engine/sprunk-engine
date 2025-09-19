@@ -1,16 +1,32 @@
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
+import { IShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
 
 /**
  * PolygonCollider class is a collider that represents a polygon shape
  */
-export class PolygonCollider extends Collider {
+export class PolygonCollider extends Collider implements IShapedCollider {
   public vertices: Vector3[];
   private _computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
     super();
     this.vertices = vertices;
+  }
+
+  public getSupportPoint(d: Vector3): Vector3 {
+    let supportPoint: Vector3 = this.vertices[0];
+    let maxDot = Number.MIN_VALUE;
+
+    this.vertices.forEach((v) => {
+      const dot = d.dotProduct(v);
+      if (dot > maxDot) {
+        maxDot = dot;
+        supportPoint = v;
+      }
+    });
+
+    return supportPoint;
   }
 
   /**

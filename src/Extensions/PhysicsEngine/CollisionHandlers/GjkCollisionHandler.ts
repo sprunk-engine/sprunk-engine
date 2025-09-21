@@ -5,9 +5,9 @@ import { Vector3 } from "@core/MathStructures/Vector3.ts";
 
 export class GjkCollisionHandler implements CollisionHandler {
   private simplex: [Vector3?, Vector3?, Vector3?, Vector3?] = []; // higher the index, younger the point
-  private readonly origin = new Vector3(0, 0, 0);
 
   areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null {
+    this.simplex = [];
     const centerA = a.getGravitationCenter().add(a.getWorldPosition());
     const centerB = b.getGravitationCenter().add(b.getWorldPosition());
 
@@ -23,10 +23,26 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Set third support point
-    let ba = this.getSimplexEdge(0, 1); // Edge from B to A
-    let oa = this.simplex[1]!.scale(-1); // Vector from A to Origin
+    let ba = this.getSimplexEdge("B", "A"); // Edge from B to A
+    let oa = this.resolveSimplexPoint("A")!.scale(-1); // Vector from A to Origin
     d = ba.crossProduct(oa).crossProduct(ba);
     this.simplex.push(this.support(a, b, d));
+    if (!this.didSupportPassOrigin(d)) {
+      return null; // No collision
+    }
+
+    // Set fourth support point
+    ba = this.getSimplexEdge("B", "A"); // update edge from B to A
+    oa = this.resolveSimplexPoint("A").scale(-1); // Vector from A to Origin
+    let ca = this.getSimplexEdge("C", "A"); // Edge from C to A
+    d = ba.crossProduct(ca);
+    if (d.dotProduct(oa) <= 0) {
+      d = d.scale(-1);
+    }
+    this.simplex.push(this.support(a, b, d));
+    if (!this.didSupportPassOrigin(d)) {
+      return null; // No collision
+    }
 
     return null; // Placeholder return
   }
@@ -48,19 +64,38 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param d direction vector
    */
   private didSupportPassOrigin(d: Vector3): boolean {
-    const lastIndex = this.simplex.length - 1;
-    const lastPoint = this.simplex[lastIndex];
+    const lastPoint = this.simplex[0];
     if (!lastPoint) throw new Error("Simplex is empty");
     return lastPoint.dotProduct(d) >= 0;
   }
 
   /**
    * Get the edge vector between two points in the simplex
+   * pointA - pointB
+   * @param a Index of the first point
+   * @param b Index of the second point
    */
-  private getSimplexEdge(index1: number, index2: number): Vector3 {
-    const point1 = this.simplex[index1];
-    const point2 = this.simplex[index2];
-    if (!point1 || !point2) throw new Error("Simplex is incomplete");
-    return point2.sub(point1);
+  private getSimplexEdge(a: string, b: string): Vector3 {
+    const pointA = this.resolveSimplexPoint(a);
+    const pointB = this.resolveSimplexPoint(b);
+    if (!pointA || !pointB) throw new Error("Simplex is incomplete");
+    return pointA.sub(pointB);
+  }
+
+  /**
+   * Resolves a point in the simplex by its letter identifier (TODO: remove to optimize perfs)
+   * @param letter Letter identifier of the point (A, B, C, D)
+   */
+  private resolveSimplexPoint(letter: string): Vector3 {
+    const maxIndex = this.simplex.length - 1;
+    let index;
+    if (letter === "A") index = maxIndex;
+    else if (letter === "B") index = maxIndex - 1;
+    else if (letter === "C") index = maxIndex - 2;
+    else if (letter === "D") index = maxIndex - 3;
+    else throw new Error("Invalid simplex point letter");
+    const point = this.simplex[index];
+    if (!point) throw new Error("Simplex is incomplete");
+    return point;
   }
 }

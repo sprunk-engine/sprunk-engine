@@ -14,6 +14,22 @@ export class GjkCollisionHandler implements CollisionHandler {
       return null; // No collision
     }
 
+    // Check if the origin is in a voronoi region
+    let areVoronoiRegionsChecked = false;
+    while (!areVoronoiRegionsChecked) {
+      // Calculate the normals of the face ABC of the tetrahedron
+      const nABC = this.getSimplexFaceNormal("A", "B", "C");
+      const da = this.getSimplexEdge("D", "A");
+      const nABCdotDA = nABC.dotProduct(da);
+      const nABCdotOA = nABC.dotProduct(
+        this.resolveSimplexPoint("A").scale(-1),
+      );
+      if (nABCdotDA * nABCdotOA < 0) {
+        // Math trick to know if the origin is in the direction of the normal
+        // rework the 2D simplex
+      }
+    }
+
     return null; // Placeholder return
   }
 
@@ -42,7 +58,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Set third support point
-    let ba = this.getSimplexEdge("B", "A"); // Edge from B to A
+    let ba = this.getSimplexEdge("B", "A");
     let oa = this.resolveSimplexPoint("A")!.scale(-1); // Vector from A to Origin
     d = ba.crossProduct(oa).crossProduct(ba);
     this.simplex.push(this.support(a, b, d));
@@ -51,9 +67,9 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Set fourth support point
-    ba = this.getSimplexEdge("B", "A"); // update edge from B to A
+    ba = this.getSimplexEdge("B", "A");
     oa = this.resolveSimplexPoint("A").scale(-1); // Vector from A to Origin
-    let ca = this.getSimplexEdge("C", "A"); // Edge from C to A
+    let ca = this.getSimplexEdge("C", "A");
     d = ba.crossProduct(ca);
     if (d.dotProduct(oa) <= 0) {
       d = d.scale(-1);
@@ -99,6 +115,22 @@ export class GjkCollisionHandler implements CollisionHandler {
     const pointB = this.resolveSimplexPoint(b);
     if (!pointA || !pointB) throw new Error("Simplex is incomplete");
     return pointA.sub(pointB);
+  }
+
+  /**
+   * Get the normal vector of a face in the simplex
+   * @param a Index of the first point
+   * @param b Index of the second point
+   * @param c Index of the third point
+   */
+  private getSimplexFaceNormal(a: string, b: string, c: string): Vector3 {
+    const pointA = this.resolveSimplexPoint(a);
+    const pointB = this.resolveSimplexPoint(b);
+    const pointC = this.resolveSimplexPoint(c);
+    if (!pointA || !pointB || !pointC) throw new Error("Simplex is incomplete");
+    const ab = pointB.clone().sub(pointA);
+    const ac = pointC.clone().sub(pointA);
+    return ab.crossProduct(ac).normalize();
   }
 
   /**

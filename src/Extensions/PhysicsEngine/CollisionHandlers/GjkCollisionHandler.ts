@@ -14,20 +14,9 @@ export class GjkCollisionHandler implements CollisionHandler {
       return null; // No collision
     }
 
-    // Check if the origin is in a voronoi region
-    let areVoronoiRegionsChecked = false;
-    while (!areVoronoiRegionsChecked) {
-      // Calculate the normals of the face ABC of the tetrahedron
-      const nABC = this.getSimplexFaceNormal("A", "B", "C");
-      const da = this.getSimplexEdge("D", "A");
-      const nABCdotDA = nABC.dotProduct(da);
-      const nABCdotOA = nABC.dotProduct(
-        this.resolveSimplexPoint("A").scale(-1),
-      );
-      if (nABCdotDA * nABCdotOA < 0) {
-        // Math trick to know if the origin is in the direction of the normal
-        // rework the 2D simplex
-      }
+    // Check if the origin is in the ABC face region
+    if (!this.isOriginInFaceRegion("A", "B", "C", "D")) {
+      return null; // No collision
     }
 
     return null; // Placeholder return
@@ -80,6 +69,29 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     return true; // The origin is possibly contained in the simplex
+  }
+
+  private isOriginInFaceRegion(
+    letterA: string,
+    letterB: string,
+    letterC: string,
+    letterD: string,
+  ): boolean {
+    let areVoronoiRegionsChecked = false;
+    while (!areVoronoiRegionsChecked) {
+      // Calculate the normals of the face ABC of the tetrahedron
+      const nABC = this.getSimplexFaceNormal(letterA, letterB, letterC);
+      const da = this.getSimplexEdge(letterD, letterA);
+      const nABCdotDA = nABC.dotProduct(da);
+      const nABCdotOA = nABC.dotProduct(
+        this.resolveSimplexPoint(letterA).scale(-1),
+      );
+      if (nABCdotDA * nABCdotOA < 0) {
+        // Math trick to know if the origin is in the direction of the normal
+        // rework the 2D simplex
+      }
+    }
+    return true;
   }
 
   /**

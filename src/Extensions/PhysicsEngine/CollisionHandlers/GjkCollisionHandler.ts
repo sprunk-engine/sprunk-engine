@@ -8,6 +8,25 @@ export class GjkCollisionHandler implements CollisionHandler {
 
   areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null {
     this.simplex = [];
+
+    // Build the initial simplex (tetrahedron) and exit if it can't contain the origin
+    if (!this.isOriginInInitialSimplex(a, b)) {
+      return null; // No collision
+    }
+
+    return null; // Placeholder return
+  }
+
+  /**
+   * Build the initial simplex (tetrahedron)
+   * @param a First collider
+   * @param b Second collider
+   * @returns true if the simplex can contain the origin, false if it can't
+   */
+  private isOriginInInitialSimplex(
+    a: ShapedCollider,
+    b: ShapedCollider,
+  ): boolean {
     const centerA = a.getGravitationCenter().add(a.getWorldPosition());
     const centerB = b.getGravitationCenter().add(b.getWorldPosition());
 
@@ -19,7 +38,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     d = d.scale(-1); // Reverse direction (passing through the origin)
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
-      return null; // No collision
+      return false; // No collision
     }
 
     // Set third support point
@@ -28,7 +47,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     d = ba.crossProduct(oa).crossProduct(ba);
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
-      return null; // No collision
+      return false; // No collision
     }
 
     // Set fourth support point
@@ -41,10 +60,10 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
-      return null; // No collision
+      return false; // No collision
     }
 
-    return null; // Placeholder return
+    return true; // The origin is possibly contained in the simplex
   }
 
   /**

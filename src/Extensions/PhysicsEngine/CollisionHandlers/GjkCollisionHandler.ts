@@ -194,7 +194,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     const lastPoint = this.simplex[this.simplex.length - 1];
     if (!lastPoint) throw new Error("Simplex is empty");
 
-    return lastPoint.dotProduct(d) <= 0;
+    return lastPoint.dotProduct(d) >= 0;
   }
 
   /**

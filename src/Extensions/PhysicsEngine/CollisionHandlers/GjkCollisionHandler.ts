@@ -19,6 +19,16 @@ export class GjkCollisionHandler implements CollisionHandler {
       return null; // No collision
     }
 
+    // Check if the origin is in the ACD face region
+    if (!this.isOriginInFaceRegion("A", "C", "D", "B", a, b)) {
+      return null; // No collision
+    }
+
+    // Check if the origin is in the ABD face region
+    if (!this.isOriginInFaceRegion("A", "B", "D", "C", a, b)) {
+      return null; // No collision
+    }
+
     return null; // Placeholder return
   }
 

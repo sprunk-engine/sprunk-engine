@@ -71,6 +71,16 @@ export class GjkCollisionHandler implements CollisionHandler {
     return true; // The origin is possibly contained in the simplex
   }
 
+  /**
+   * Check if the origin is in the face region in a 3D simplex (tetrahedron)
+   * @param letterA Index of the first point of the face
+   * @param letterB Index of the second point of the face
+   * @param letterC Index of the third point of the face
+   * @param letterD Index of the point opposite to the face
+   * @param a First collider
+   * @param b Second collider
+   * @returns true if the origin is in the face region, false otherwise
+   */
   private isOriginInFaceRegion(
     letterA: string,
     letterB: string,
@@ -133,43 +143,13 @@ export class GjkCollisionHandler implements CollisionHandler {
     return true;
   }
 
-  private isOriginIn2DSimplex(
-    letterA: string,
-    letterB: string,
-    letterC: string,
-    a: ShapedCollider,
-    b: ShapedCollider,
-  ): boolean | void {
-    // Check voronoi regions AB
-    if (this.isOriginIn2DVoronoi(letterA, letterB, letterC)) {
-      const indexOfPointToReplace = this.getLetterIndex(letterC);
-      const newPoint = this.support(
-        a,
-        b,
-        this.getSimplexEdge(letterB, letterA),
-      );
-
-      if (
-        this.resolveSimplexPoint(letterA) === newPoint ||
-        this.resolveSimplexPoint(letterB) === newPoint ||
-        this.resolveSimplexPoint(letterC) === newPoint
-      ) {
-        // no collision because point already exists
-        return false;
-      }
-      // update and try again
-      this.simplex[indexOfPointToReplace] = newPoint;
-      return true;
-    }
-    // it is not in -> check next
-    // it is in -> update simplex and check again
-
-    // Check voronoi regions AC
-    this.isOriginIn2DVoronoi(letterA, letterC, letterB, a, b);
-
-    return true;
-  }
-
+  /**
+   * Check if the origin is in the voronoi region of the edge in a 2D simplex (triangle)
+   * @param letterA Index of the first point of the edge
+   * @param letterB Index of the second point of the edge
+   * @param letterC Index of the third point (not part of the edge)
+   * @returns true if the origin is in the voronoi region of the edge AB, false otherwise
+   */
   private isOriginIn2DVoronoi(
     letterA: string,
     letterB: string,

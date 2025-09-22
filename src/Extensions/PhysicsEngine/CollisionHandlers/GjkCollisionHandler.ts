@@ -15,7 +15,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Check if the origin is in the ABC face region
-    if (!this.isOriginInFaceRegion("A", "B", "C", "D")) {
+    if (!this.isOriginInFaceRegion("A", "B", "C", "D", a, b)) {
       return null; // No collision
     }
 
@@ -76,6 +76,8 @@ export class GjkCollisionHandler implements CollisionHandler {
     letterB: string,
     letterC: string,
     letterD: string,
+    a: ShapedCollider,
+    b: ShapedCollider,
   ): boolean {
     let areVoronoiRegionsChecked = false;
     while (!areVoronoiRegionsChecked) {
@@ -86,12 +88,98 @@ export class GjkCollisionHandler implements CollisionHandler {
       const nABCdotOA = nABC.dotProduct(
         this.resolveSimplexPoint(letterA).scale(-1),
       );
-      if (nABCdotDA * nABCdotOA < 0) {
-        // Math trick to know if the origin is in the direction of the normal
-        // rework the 2D simplex
+      const nProduct = nABCdotDA * nABCdotOA; // Math trick to know if the origin is in the direction of the normal
+      if (nProduct < 0) {
+        // Check 2D simplex voronoi AB region
+        if (this.isOriginIn2DVoronoi(letterA, letterB, letterC)) {
+          const indexOfPointToReplace = this.getLetterIndex(letterC);
+          const d = this.getSimplexEdge(letterB, letterA);
+          const newPoint = this.support(a, b, d);
+
+          if (
+            this.resolveSimplexPoint(letterA) === newPoint ||
+            this.resolveSimplexPoint(letterB) === newPoint ||
+            this.resolveSimplexPoint(letterC) === newPoint
+          ) {
+            // no collision because point already exists
+            return false;
+          }
+          // update and try again
+          this.simplex[indexOfPointToReplace] = newPoint;
+          continue;
+        }
+
+        // Check 2D simplex voronoi AC region
+        if (this.isOriginIn2DVoronoi(letterA, letterC, letterB)) {
+          const indexOfPointToReplace = this.getLetterIndex(letterB);
+          const d = this.getSimplexEdge(letterC, letterA);
+          const newPoint = this.support(a, b, d);
+
+          if (
+            this.resolveSimplexPoint(letterA) === newPoint ||
+            this.resolveSimplexPoint(letterB) === newPoint ||
+            this.resolveSimplexPoint(letterC) === newPoint
+          ) {
+            // no collision because point already exists
+            return false;
+          }
+          // update and try again
+          this.simplex[indexOfPointToReplace] = newPoint;
+          continue;
+        }
       }
+      areVoronoiRegionsChecked = true;
     }
     return true;
+  }
+
+  private isOriginIn2DSimplex(
+    letterA: string,
+    letterB: string,
+    letterC: string,
+    a: ShapedCollider,
+    b: ShapedCollider,
+  ): boolean | void {
+    // Check voronoi regions AB
+    if (this.isOriginIn2DVoronoi(letterA, letterB, letterC)) {
+      const indexOfPointToReplace = this.getLetterIndex(letterC);
+      const newPoint = this.support(
+        a,
+        b,
+        this.getSimplexEdge(letterB, letterA),
+      );
+
+      if (
+        this.resolveSimplexPoint(letterA) === newPoint ||
+        this.resolveSimplexPoint(letterB) === newPoint ||
+        this.resolveSimplexPoint(letterC) === newPoint
+      ) {
+        // no collision because point already exists
+        return false;
+      }
+      // update and try again
+      this.simplex[indexOfPointToReplace] = newPoint;
+      return true;
+    }
+    // it is not in -> check next
+    // it is in -> update simplex and check again
+
+    // Check voronoi regions AC
+    this.isOriginIn2DVoronoi(letterA, letterC, letterB, a, b);
+
+    return true;
+  }
+
+  private isOriginIn2DVoronoi(
+    letterA: string,
+    letterB: string,
+    letterC: string,
+  ): boolean {
+    const ca = this.getSimplexEdge(letterC, letterA);
+    const ba = this.getSimplexEdge(letterB, letterA);
+    const oa = this.resolveSimplexPoint(letterA).scale(-1);
+
+    return ca.crossProduct(ba).crossProduct(ba).dotProduct(oa) > 0;
   }
 
   /**
@@ -150,15 +238,18 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param letter Letter identifier of the point (A, B, C, D)
    */
   private resolveSimplexPoint(letter: string): Vector3 {
-    const maxIndex = this.simplex.length - 1;
-    let index;
-    if (letter === "A") index = maxIndex;
-    else if (letter === "B") index = maxIndex - 1;
-    else if (letter === "C") index = maxIndex - 2;
-    else if (letter === "D") index = maxIndex - 3;
-    else throw new Error("Invalid simplex point letter");
+    let index = this.getLetterIndex(letter);
     const point = this.simplex[index];
     if (!point) throw new Error("Simplex is incomplete");
     return point;
+  }
+
+  private getLetterIndex(letter: string): number {
+    const maxIndex = this.simplex.length - 1;
+    if (letter === "A") return maxIndex;
+    else if (letter === "B") return maxIndex - 1;
+    else if (letter === "C") return maxIndex - 2;
+    else if (letter === "D") return maxIndex - 3;
+    else throw new Error("Invalid simplex point letter");
   }
 }

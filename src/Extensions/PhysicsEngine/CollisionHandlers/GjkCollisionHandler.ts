@@ -6,7 +6,7 @@ import { Vector3 } from "@core/MathStructures/Vector3.ts";
 export class GjkCollisionHandler implements CollisionHandler {
   private simplex: [Vector3?, Vector3?, Vector3?, Vector3?] = []; // higher the index, younger the point
 
-  areColliding(a: Collider, b: Collider): Collision | null {
+  public areColliding(a: Collider, b: Collider): Collision | null {
     this.simplex = [];
 
     // Build the initial simplex (tetrahedron) and exit if it can't contain the origin
@@ -50,7 +50,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     d = d.scale(-1); // Reverse direction (passing through the origin)
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
-      return false; // No collision
+      return true; // No collision
     }
 
     // Set third support point
@@ -176,8 +176,8 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param d Direction vector
    */
   private support(a: Collider, b: Collider, d: Vector3): Vector3 {
-    const pointA = a.getSupportPoint(d).add(a.getWorldPosition());
-    const pointB = b.getSupportPoint(d.scale(-1)).add(b.getWorldPosition());
+    const pointA = a.getSupportPoint(d.scale(-1)).add(a.getWorldPosition());
+    const pointB = b.getSupportPoint(d).add(b.getWorldPosition());
     return pointA.sub(pointB);
   }
 
@@ -186,8 +186,9 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param d direction vector
    */
   private didSupportPassOrigin(d: Vector3): boolean {
-    const lastPoint = this.simplex[0];
+    const lastPoint = this.simplex[this.simplex.length - 1];
     if (!lastPoint) throw new Error("Simplex is empty");
+
     return lastPoint.dotProduct(d) >= 0;
   }
 

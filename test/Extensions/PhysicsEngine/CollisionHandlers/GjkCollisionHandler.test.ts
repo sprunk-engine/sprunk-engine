@@ -32,7 +32,9 @@ describe("Collider", (): void => {
     object2.transform.position.set(0, -1, -2);
 
     expect(box1.getVerticesWithTransform()[7]).toEqual(new Vector3(0, -3, 2));
+    expect(box1.getGravitationCenter()).toEqual(new Vector3(1.5, -1.5, 1));
     expect(box2.getVerticesWithTransform()[7]).toEqual(new Vector3(0, -4, 0));
+    expect(box2.getGravitationCenter()).toEqual(new Vector3(1.5, -1.5, 1));
 
     // When
     const collision = gjkCollisionHandler.areColliding(box1, box2);

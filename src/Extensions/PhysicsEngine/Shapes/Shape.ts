@@ -3,7 +3,7 @@ import { Vector3 } from "@core/MathStructures/Vector3.ts";
 /**
  * Interface for colliders that have a shape (like PolygonCollider, CircleCollider, etc.)
  */
-export interface ShapedCollider {
+export interface Shape {
   /**
    * Get the support (furthest) point in a given direction.
    * useful in GJK algorithm.
@@ -17,7 +17,8 @@ export interface ShapedCollider {
   getGravitationCenter(): Vector3;
 
   /**
-   * Get the world position of the collider
+   * Get the the longest vertex from the gravitation center
+   * Used in broad phase collision detection to optimize performance
    */
-  getWorldPosition(): Vector3;
+  getLongestVertexFromCenter(): Vector3;
 }

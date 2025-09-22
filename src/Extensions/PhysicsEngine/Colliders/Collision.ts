@@ -1,5 +1,6 @@
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
+import { ShapedCollider } from "./ShapedCollider";
 
 /**
  * Represents a collision between two colliders from the POV of a collider.

@@ -1,5 +1,5 @@
-import { ShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
+import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
 
 /**
  * CollisionHandler interface is a base interface for all collision handlers algorithms types
@@ -10,5 +10,5 @@ export interface CollisionHandler {
    * @param a
    * @param b
    */
-  areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null;
+  areColliding(a: Collider, b: Collider): Collision | null;
 }

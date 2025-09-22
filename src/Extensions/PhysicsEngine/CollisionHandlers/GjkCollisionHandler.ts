@@ -1,12 +1,12 @@
 import { CollisionHandler } from "@extensions/PhysicsEngine/CollisionHandlers/CollisionHandler.ts";
-import { ShapedCollider } from "@extensions/PhysicsEngine/Colliders/ShapedCollider.ts";
+import { Collider } from "@extensions/PhysicsEngine/Colliders/Collider.ts";
 import { Collision } from "@extensions/PhysicsEngine/Colliders/Collision.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 
 export class GjkCollisionHandler implements CollisionHandler {
   private simplex: [Vector3?, Vector3?, Vector3?, Vector3?] = []; // higher the index, younger the point
 
-  areColliding(a: ShapedCollider, b: ShapedCollider): Collision | null {
+  areColliding(a: Collider, b: Collider): Collision | null {
     this.simplex = [];
 
     // Build the initial simplex (tetrahedron) and exit if it can't contain the origin
@@ -29,7 +29,7 @@ export class GjkCollisionHandler implements CollisionHandler {
       return null; // No collision
     }
 
-    return null; // Placeholder return
+    return new Collision(10, this.simplex[0]!, a, b); // Placeholder return
   }
 
   /**
@@ -38,10 +38,7 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param b Second collider
    * @returns true if the simplex can contain the origin, false if it can't
    */
-  private isOriginInInitialSimplex(
-    a: ShapedCollider,
-    b: ShapedCollider,
-  ): boolean {
+  private isOriginInInitialSimplex(a: Collider, b: Collider): boolean {
     const centerA = a.getGravitationCenter().add(a.getWorldPosition());
     const centerB = b.getGravitationCenter().add(b.getWorldPosition());
 
@@ -96,8 +93,8 @@ export class GjkCollisionHandler implements CollisionHandler {
     letterB: string,
     letterC: string,
     letterD: string,
-    a: ShapedCollider,
-    b: ShapedCollider,
+    a: Collider,
+    b: Collider,
   ): boolean {
     let areVoronoiRegionsChecked = false;
     while (!areVoronoiRegionsChecked) {
@@ -178,7 +175,7 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param b Second collider
    * @param d Direction vector
    */
-  private support(a: ShapedCollider, b: ShapedCollider, d: Vector3): Vector3 {
+  private support(a: Collider, b: Collider, d: Vector3): Vector3 {
     const pointA = a.getSupportPoint(d).add(a.getWorldPosition());
     const pointB = b.getSupportPoint(d.scale(-1)).add(b.getWorldPosition());
     return pointA.sub(pointB);

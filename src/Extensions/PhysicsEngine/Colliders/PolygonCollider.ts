@@ -6,7 +6,6 @@ import { Polyhedron } from "@extensions/PhysicsEngine/Shapes/polyhedron.ts";
  */
 export class PolygonCollider extends Collider {
   public vertices: Vector3[];
-  private _computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
     super();

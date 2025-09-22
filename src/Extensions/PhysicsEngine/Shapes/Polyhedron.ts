@@ -2,7 +2,7 @@ import { Shape } from "@extensions/PhysicsEngine/Shapes/Shape.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
 
 export class Polyhedron implements Shape {
-  public vertices: Vector3[];
+  public readonly vertices: Vector3[];
   private _computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
@@ -11,7 +11,7 @@ export class Polyhedron implements Shape {
 
   public getSupportPoint(d: Vector3): Vector3 {
     let supportPoint: Vector3 = this.vertices[0];
-    let maxDot = Number.MIN_VALUE;
+    let maxDot = -Infinity;
 
     this.vertices.forEach((v) => {
       const dot = d.dotProduct(v);

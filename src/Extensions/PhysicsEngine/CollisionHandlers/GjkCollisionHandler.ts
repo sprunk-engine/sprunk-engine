@@ -46,11 +46,12 @@ export class GjkCollisionHandler implements CollisionHandler {
     let d = centerB.clone().sub(centerA); // Direction from A to B
     this.simplex.push(this.support(a, b, d)); // Initial support point
 
+    d = this.simplex[0]!.clone().scale(-1); // Reverse direction (passing through the origin)
+
     // Set second support point
-    d = d.scale(-1); // Reverse direction (passing through the origin)
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
-      return true; // No collision
+      return false; // No collision
     }
 
     // Set third support point
@@ -176,8 +177,12 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @param d Direction vector
    */
   private support(a: Collider, b: Collider, d: Vector3): Vector3 {
-    const pointA = a.getSupportPoint(d.scale(-1)).add(a.getWorldPosition());
-    const pointB = b.getSupportPoint(d).add(b.getWorldPosition());
+    const pointA = a.getSupportPoint(d).clone().add(a.getWorldPosition());
+    const pointB = b
+      .getSupportPoint(d.clone().scale(-1))
+      .clone()
+      .add(b.getWorldPosition());
+
     return pointA.sub(pointB);
   }
 
@@ -189,7 +194,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     const lastPoint = this.simplex[this.simplex.length - 1];
     if (!lastPoint) throw new Error("Simplex is empty");
 
-    return lastPoint.dotProduct(d) >= 0;
+    return lastPoint.dotProduct(d) <= 0;
   }
 
   /**

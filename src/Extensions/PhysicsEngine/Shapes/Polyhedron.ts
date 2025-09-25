@@ -46,35 +46,13 @@ export class Polyhedron implements Shape {
   }
 
   public getGravitationCenter(): Vector3 {
-    let area = 0;
-    let centroidX = 0;
-    let centroidY = 0;
+    let centroid = new Vector3(0, 0, 0);
 
-    for (let i = 0; i < this.vertices.length; i++) {
-      const x1 = this.vertices[i].x;
-      const y1 = this.vertices[i].y;
-      const x2 = this.vertices[(i + 1) % this.vertices.length].x;
-      const y2 = this.vertices[(i + 1) % this.vertices.length].y;
-
-      const cross = x1 * y2 - x2 * y1;
-
-      area += cross;
-      centroidX += (x1 + x2) * cross;
-      centroidY += (y1 + y2) * cross;
-    }
-
-    area *= 0.5;
-
-    centroidX /= 6 * area;
-    centroidY /= 6 * area;
-
-    // Pour Z : comme tes sommets sont coplanaires, on peut juste faire la moyenne
-    let centroidZ = 0;
     for (const v of this.vertices) {
-      centroidZ += v.z;
+      centroid.add(v);
     }
-    centroidZ /= this.vertices.length;
 
-    return new Vector3(centroidX, centroidY, centroidZ);
+    centroid.scale(1 / this.vertices.length);
+    return centroid;
   }
 }

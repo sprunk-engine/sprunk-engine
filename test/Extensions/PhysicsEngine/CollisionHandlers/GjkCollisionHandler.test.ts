@@ -77,6 +77,6 @@ describe("Collider", (): void => {
     const collision = gjkCollisionHandler.areColliding(box1, box2);
 
     // Then
-    expect(collision).toEqual(null);
+    expect(collision).toBeNull();
   });
 });

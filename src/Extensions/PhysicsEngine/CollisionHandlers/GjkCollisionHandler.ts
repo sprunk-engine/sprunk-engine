@@ -39,8 +39,8 @@ export class GjkCollisionHandler implements CollisionHandler {
    * @returns true if the simplex can contain the origin, false if it can't
    */
   private isOriginInInitialSimplex(a: Collider, b: Collider): boolean {
-    const centerA = a.getGravitationCenter().add(a.getWorldPosition());
-    const centerB = b.getGravitationCenter().add(b.getWorldPosition());
+    const centerA = a.getGravitationCenter().clone().add(a.getWorldPosition());
+    const centerB = b.getGravitationCenter().clone().add(b.getWorldPosition());
 
     // Set initial support point
     let d = centerB.clone().sub(centerA); // Direction from A to B
@@ -55,8 +55,8 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Set third support point
-    let ba = this.getSimplexEdge("B", "A");
-    let oa = this.resolveSimplexPoint("A")!.scale(-1); // Vector from A to Origin
+    let ba = this.getSimplexEdge("B", "A").clone();
+    let oa = this.resolveSimplexPoint("A").clone().scale(-1); // Vector from A to Origin
     d = ba.crossProduct(oa).crossProduct(ba);
     this.simplex.push(this.support(a, b, d));
     if (!this.didSupportPassOrigin(d)) {
@@ -64,11 +64,11 @@ export class GjkCollisionHandler implements CollisionHandler {
     }
 
     // Set fourth support point
-    ba = this.getSimplexEdge("B", "A");
-    oa = this.resolveSimplexPoint("A").scale(-1); // Vector from A to Origin
-    let ca = this.getSimplexEdge("C", "A");
+    ba = this.getSimplexEdge("B", "A").clone();
+    oa = this.resolveSimplexPoint("A").clone().scale(-1); // Vector from A to Origin
+    let ca = this.getSimplexEdge("C", "A").clone();
     d = ba.crossProduct(ca);
-    if (d.dotProduct(oa) <= 0) {
+    if (d.clone().dotProduct(oa) <= 0) {
       d = d.scale(-1);
     }
     this.simplex.push(this.support(a, b, d));
@@ -100,18 +100,18 @@ export class GjkCollisionHandler implements CollisionHandler {
     let areVoronoiRegionsChecked = false;
     while (!areVoronoiRegionsChecked) {
       // Calculate the normals of the face ABC of the tetrahedron
-      const nABC = this.getSimplexFaceNormal(letterA, letterB, letterC);
-      const da = this.getSimplexEdge(letterD, letterA);
-      const nABCdotDA = nABC.dotProduct(da);
-      const nABCdotOA = nABC.dotProduct(
-        this.resolveSimplexPoint(letterA).scale(-1),
-      );
+      const nABC = this.getSimplexFaceNormal(letterA, letterB, letterC).clone();
+      const da = this.getSimplexEdge(letterD, letterA).clone();
+      const nABCdotDA = nABC.clone().dotProduct(da);
+      const nABCdotOA = nABC
+        .clone()
+        .dotProduct(this.resolveSimplexPoint(letterA).clone().scale(-1));
       const nProduct = nABCdotDA * nABCdotOA; // Math trick to know if the origin is in the direction of the normal
       if (nProduct < 0) {
         // Check 2D simplex voronoi AB region
         if (this.isOriginIn2DVoronoi(letterA, letterB, letterC)) {
           const indexOfPointToReplace = this.getLetterIndex(letterC);
-          const d = this.getSimplexEdge(letterB, letterA);
+          const d = this.getSimplexEdge(letterB, letterA).clone();
           const newPoint = this.support(a, b, d);
 
           if (
@@ -130,7 +130,7 @@ export class GjkCollisionHandler implements CollisionHandler {
         // Check 2D simplex voronoi AC region
         if (this.isOriginIn2DVoronoi(letterA, letterC, letterB)) {
           const indexOfPointToReplace = this.getLetterIndex(letterB);
-          const d = this.getSimplexEdge(letterC, letterA);
+          const d = this.getSimplexEdge(letterC, letterA).clone();
           const newPoint = this.support(a, b, d);
 
           if (
@@ -163,9 +163,9 @@ export class GjkCollisionHandler implements CollisionHandler {
     letterB: string,
     letterC: string,
   ): boolean {
-    const ca = this.getSimplexEdge(letterC, letterA);
-    const ba = this.getSimplexEdge(letterB, letterA);
-    const oa = this.resolveSimplexPoint(letterA).scale(-1);
+    const ca = this.getSimplexEdge(letterC, letterA).clone();
+    const ba = this.getSimplexEdge(letterB, letterA).clone();
+    const oa = this.resolveSimplexPoint(letterA).clone().scale(-1);
 
     return ca.crossProduct(ba).crossProduct(ba).dotProduct(oa) > 0;
   }
@@ -194,7 +194,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     const lastPoint = this.simplex[this.simplex.length - 1];
     if (!lastPoint) throw new Error("Simplex is empty");
 
-    return lastPoint.dotProduct(d) >= 0;
+    return lastPoint.clone().dotProduct(d) >= 0;
   }
 
   /**
@@ -207,7 +207,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     const pointA = this.resolveSimplexPoint(a);
     const pointB = this.resolveSimplexPoint(b);
     if (!pointA || !pointB) throw new Error("Simplex is incomplete");
-    return pointA.sub(pointB);
+    return pointA.clone().sub(pointB);
   }
 
   /**
@@ -234,7 +234,7 @@ export class GjkCollisionHandler implements CollisionHandler {
     let index = this.getLetterIndex(letter);
     const point = this.simplex[index];
     if (!point) throw new Error("Simplex is incomplete");
-    return point;
+    return point.clone();
   }
 
   private getLetterIndex(letter: string): number {

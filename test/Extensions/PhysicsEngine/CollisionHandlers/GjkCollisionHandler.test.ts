@@ -8,9 +8,9 @@ import { GameObject } from "@core/GameObject.ts";
 describe("Collider", (): void => {
   const gjkCollisionHandler = new GjkCollisionHandler();
 
-  /**
-   * Tests two box that touch each other on one face trigger a collision.
-   */
+  // /**
+  //  * Tests two box that touch each other on one face trigger a collision.
+  //  */
   it("should trigger a collision on boxes touching each other", () => {
     // Given
     const vertices: Vector3[] = [
@@ -72,6 +72,45 @@ describe("Collider", (): void => {
     expect(box1.getGravitationCenter()).toEqual(new Vector3(1.5, -1.5, 1));
     expect(box2.getVerticesWithTransform()[7]).toEqual(new Vector3(0, -4, -1));
     expect(box2.getGravitationCenter()).toEqual(new Vector3(1.5, -1.5, 1));
+
+    // When
+    const collision = gjkCollisionHandler.areColliding(box1, box2);
+
+    // Then
+    expect(collision).toBeNull();
+  });
+
+  /**
+   * Tests a box and a pyramid that are not colliding do not trigger a collision.
+   */
+  it("should not trigger a collision on box and pyramid not touching each other", () => {
+    // Given
+    const boxVertices: Vector3[] = [
+      new Vector3(0, 0, 0),
+      new Vector3(2, 0, 0),
+      new Vector3(2, 2, 0),
+      new Vector3(0, 2, 0),
+      new Vector3(0, 0, 2),
+      new Vector3(2, 0, 2),
+      new Vector3(2, 2, 2),
+      new Vector3(0, 2, 2),
+    ];
+    const object1: GameObject = new GameObject();
+    const box1: PolygonCollider = new PolygonCollider(boxVertices);
+    object1.addBehavior(box1);
+
+    const pyramidVertices: Vector3[] = [
+      new Vector3(0, 0, 0),
+      new Vector3(1, 0, 0),
+      new Vector3(0, 1, 0),
+      new Vector3(1, 1, 0),
+      new Vector3(0.5, 0.5, 2),
+    ];
+
+    const object2: GameObject = new GameObject();
+    const box2: PolygonCollider = new PolygonCollider(pyramidVertices);
+    object2.addBehavior(box2);
+    object2.transform.position.set(2.1, 2.1, 2.1);
 
     // When
     const collision = gjkCollisionHandler.areColliding(box1, box2);

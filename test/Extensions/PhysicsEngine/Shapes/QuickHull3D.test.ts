@@ -21,26 +21,57 @@ describe("QuickHull3D", (): void => {
     ];
 
     const hull = new QuickHull3D(vertices);
-    hull.build();
 
     // When
-    const faces = hull.getMergedCoplanarFaces();
+    hull.build();
 
     // Then
-    expect(faces).toHaveLength(6);
-
     const facesIndexes: number[][] = [];
-    faces.forEach((face: Face) => {
+    hull.faces.forEach((face: Face) => {
       facesIndexes.push(face.indices);
     });
 
     const expectedFaces = [
-      [0, 1, 5, 4],
-      [1, 2, 6, 5],
+      [2, 1, 0, 3],
+      [5, 4, 0, 1],
       [0, 4, 7, 3],
-      [1, 0, 3, 2],
-      [4, 5, 6, 7],
+      [1, 2, 6, 5],
       [2, 3, 7, 6],
+      [4, 5, 6, 7],
+    ];
+
+    expect(facesIndexes).toEqual(expect.arrayContaining(expectedFaces));
+    expect(facesIndexes).toHaveLength(expectedFaces.length);
+  });
+
+  /**
+   * Tests if we find the correct faces of a tetrahedron.
+   */
+  it("should find the correct faces of a tetrahedron", () => {
+    // Given
+    const vertices: Vector3[] = [
+      new Vector3(0, 0, 0),
+      new Vector3(4, 0, 0),
+      new Vector3(3, 3, 0),
+      new Vector3(1, 1, 4),
+    ];
+
+    const hull = new QuickHull3D(vertices);
+
+    // When
+    hull.build();
+
+    // Then
+    const facesIndexes: number[][] = [];
+    hull.faces.forEach((face: Face) => {
+      facesIndexes.push(face.indices);
+    });
+
+    const expectedFaces = [
+      [2, 1, 0],
+      [1, 3, 0],
+      [3, 2, 0],
+      [2, 3, 1],
     ];
 
     expect(facesIndexes).toEqual(expect.arrayContaining(expectedFaces));
@@ -54,30 +85,29 @@ describe("QuickHull3D", (): void => {
     // Given
     const vertices: Vector3[] = [
       new Vector3(0, 0, 0),
-      new Vector3(4, 0, 0),
-      new Vector3(3, 3, 0),
-      new Vector3(1, 1, 4),
+      new Vector3(1, 0, 0),
+      new Vector3(0, 1, 0),
+      new Vector3(1, 1, 0),
+      new Vector3(0.5, 0.5, 2),
     ];
 
     const hull = new QuickHull3D(vertices);
-    hull.build();
 
     // When
-    const faces = hull.getMergedCoplanarFaces();
+    hull.build();
 
     // Then
-    expect(faces).toHaveLength(4);
-
     const facesIndexes: number[][] = [];
-    faces.forEach((face: Face) => {
+    hull.faces.forEach((face: Face) => {
       facesIndexes.push(face.indices);
     });
 
     const expectedFaces = [
-      [0, 1, 2],
-      [0, 3, 1],
-      [0, 2, 3],
-      [1, 3, 2],
+      [1, 4, 0],
+      [4, 2, 0],
+      [2, 4, 3],
+      [4, 1, 3],
+      [3, 1, 0, 2],
     ];
 
     expect(facesIndexes).toEqual(expect.arrayContaining(expectedFaces));

@@ -1,12 +1,21 @@
 import { Shape } from "@extensions/PhysicsEngine/Shapes/Shape.ts";
 import { Vector3 } from "@core/MathStructures/Vector3.ts";
+import { Face } from "@extensions/PhysicsEngine/Shapes/Face";
+import { QuickHull3D } from "@extensions/PhysicsEngine/Shapes/QuickHull3D";
 
 export class Polyhedron implements Shape {
   public readonly vertices: Vector3[];
+  private faces: Face[] = [];
   private _computedLongestVertexFromGravityCenter?: Vector3;
 
   constructor(vertices: Vector3[]) {
     this.vertices = vertices;
+
+    if (this.faces.length == 0) {
+      const hull = new QuickHull3D(vertices);
+      hull.build();
+      this.faces = hull.getMergedCoplanarFaces();
+    }
   }
 
   public getSupportPoint(d: Vector3): Vector3 {

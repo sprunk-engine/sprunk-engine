@@ -59,7 +59,7 @@ export class Vector3 {
     this.x += vector.x;
     this.y += vector.y;
     this.z += vector.z;
-    return this;
+    return this.round();
   }
 
   /**
@@ -70,6 +70,19 @@ export class Vector3 {
     this.x -= vector.x;
     this.y -= vector.y;
     this.z -= vector.z;
+    return this.round();
+  }
+
+  /**
+   * Round the vector values (used to avoid floating point issues)
+   * @param decimals number of decimals after the round
+   * @returns
+   */
+  public round(decimals: number = 9): Vector3 {
+    const factor = Math.pow(10, decimals);
+    this.x = Math.round(this.x * factor) / factor;
+    this.y = Math.round(this.y * factor) / factor;
+    this.z = Math.round(this.z * factor) / factor;
     return this;
   }
 

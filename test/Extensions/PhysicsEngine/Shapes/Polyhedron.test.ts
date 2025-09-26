@@ -26,4 +26,24 @@ describe("Polyhedron", (): void => {
     // Then
     expect(center).toEqual(new Vector3(1, 1, 1));
   });
+
+  /**
+   * Tests if the gravity center of a pyramid is correct
+   */
+  it("should find the correct gravity center of a pyramid", () => {
+    // Given
+    const vertices: Vector3[] = [
+      new Vector3(0, 0, 0),
+      new Vector3(5, 0, 0),
+      new Vector3(3, 5, 0),
+      new Vector3(3, 3, 6),
+    ];
+    const shape = new Polyhedron(vertices);
+
+    // When
+    const center = shape.getGravitationCenter();
+
+    // Then
+    expect(center).toEqual(new Vector3(2.75, 2, 1.5));
+  });
 });

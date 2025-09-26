@@ -3,7 +3,7 @@ import { Face } from "@extensions/PhysicsEngine/Shapes/Face.ts";
 
 export class QuickHull3D {
   private vertices: Vector3[];
-  public faces: number[][];
+  private faces: Face[];
 
   constructor(vertices: Vector3[]) {
     if (vertices.length < 4) throw new Error("At least 4 points are required");
@@ -12,308 +12,377 @@ export class QuickHull3D {
   }
 
   /**
-   * Build the convex hull and fill this.faces (triangles)
+   * Build convex hull using a robust incremental algorithm
    */
   public build(): void {
-    const tetra = this.initTetrahedron();
-    this.faces = [
-      [tetra[0], tetra[1], tetra[2]],
-      [tetra[0], tetra[3], tetra[1]],
-      [tetra[0], tetra[2], tetra[3]],
-      [tetra[1], tetra[3], tetra[2]],
-    ];
+    this.faces = [];
 
-    let remaining = this.vertices
-      .map((_, i) => i)
-      .filter((i) => !tetra.includes(i));
-
-    while (true) {
-      const [faceIndex, farthest] = this.findFarthestPoint(remaining);
-      if (farthest === null) break;
-
-      const visibleFaces = this.collectVisibleFaces(farthest);
-      const horizon = this.computeHorizon(visibleFaces, farthest);
-
-      this.removeFaces(visibleFaces);
-      this.addNewFaces(horizon, farthest);
-
-      remaining = remaining.filter((i) => i !== farthest);
+    // Step 1: Find initial simplex (tetrahedron)
+    const simplex = this.findInitialSimplex();
+    if (!simplex) {
+      throw new Error("Points are degenerate (coplanar or collinear)");
     }
+
+    // Step 2: Create initial faces from simplex
+    this.createInitialFaces(simplex);
+
+    // Step 3: Add remaining points incrementally
+    this.addRemainingPoints();
+
+    // Step 4: Merge coplanar faces
+    this.mergeCoplanarFaces();
   }
 
   /**
-   * Initialize the tetrahedron from the point set
-   * @return Indices of the tetrahedron vertices
-   * @throws Error if points are degenerate
-   **/
-  private initTetrahedron(): number[] {
-    const a = 0;
-    let b = -1,
-      c = -1,
-      d = -1;
+   * Find initial tetrahedron that contains all points
+   */
+  private findInitialSimplex(): number[] | null {
+    // Find extreme points along each axis
+    const extremes = this.findExtremePoints();
 
-    for (let i = 1; i < this.vertices.length; i++) {
-      if (this.vertices[i].clone().sub(this.vertices[a]).length > 1e-9) {
-        b = i;
-        break;
-      }
-    }
-    if (b === -1) throw new Error("All points are coincident");
-
-    for (let i = b + 1; i < this.vertices.length; i++) {
-      const ab = this.vertices[b].clone().sub(this.vertices[a]);
-      const ac = this.vertices[i].clone().sub(this.vertices[a]);
-      if (ab.crossProduct(ac).length > 1e-9) {
-        c = i;
-        break;
-      }
-    }
-    if (c === -1) throw new Error("All points are collinear");
-
-    for (let i = c + 1; i < this.vertices.length; i++) {
-      const ab = this.vertices[b].clone().sub(this.vertices[a]);
-      const ac = this.vertices[c].clone().sub(this.vertices[a]);
-      const ad = this.vertices[i].clone().sub(this.vertices[a]);
-      const vol = ab.dotProduct(ac.crossProduct(ad));
-      if (Math.abs(vol) > 1e-9) {
-        d = i;
-        break;
-      }
-    }
-    if (d === -1) throw new Error("All points are coplanar");
-
-    return [a, b, c, d];
-  }
-
-  /**
-   * Find the farthest point from a set of candidates with respect to the current convex hull
-   * @param candidates Array of candidate point indices
-   * @return Tuple of the face index and the farthest point index
-   **/
-  private findFarthestPoint(
-    candidates: number[],
-  ): [number | null, number | null] {
-    let maxDist = 0;
-    let farthest: number | null = null;
-    let faceIndex: number | null = null;
-
-    for (let fi = 0; fi < this.faces.length; fi++) {
-      const [i1, i2, i3] = this.faces[fi];
-      const normal = this.computeNormal(i1, i2, i3);
-      for (const idx of candidates) {
-        const dist = normal.dotProduct(
-          this.vertices[idx].clone().sub(this.vertices[i1]),
-        );
-        if (dist > maxDist + 1e-9) {
-          maxDist = dist;
-          farthest = idx;
-          faceIndex = fi;
+    // Try different combinations to find a non-degenerate tetrahedron
+    for (let i = 0; i < extremes.length; i++) {
+      for (let j = i + 1; j < extremes.length; j++) {
+        for (let k = j + 1; k < extremes.length; k++) {
+          for (let l = k + 1; l < extremes.length; l++) {
+            const tetra = [extremes[i], extremes[j], extremes[k], extremes[l]];
+            if (this.isValidTetrahedron(tetra)) {
+              return tetra;
+            }
+          }
         }
       }
     }
-    return [faceIndex, farthest];
+
+    return null;
   }
 
   /**
-   * Collect all visible faces from a point
-   * @param pointIndex Index of the point
-   * @return Array of face indices that are visible from the point
-   **/
-  private collectVisibleFaces(pointIndex: number): number[] {
-    const visible: number[] = [];
-    for (let fi = 0; fi < this.faces.length; fi++) {
-      const [i1, i2, i3] = this.faces[fi];
-      const normal = this.computeNormal(i1, i2, i3);
-      const dist = normal.dotProduct(
-        this.vertices[pointIndex].clone().sub(this.vertices[i1]),
-      );
-      if (dist > 1e-9) visible.push(fi);
+   * Find extreme points along each axis
+   */
+  private findExtremePoints(): number[] {
+    const extremes = new Set<number>();
+
+    // Add min/max for each axis
+    for (const axis of ["x", "y", "z"] as const) {
+      let minIdx = 0;
+      let maxIdx = 0;
+
+      for (let i = 1; i < this.vertices.length; i++) {
+        if (this.vertices[i][axis] < this.vertices[minIdx][axis]) minIdx = i;
+        if (this.vertices[i][axis] > this.vertices[maxIdx][axis]) maxIdx = i;
+      }
+
+      extremes.add(minIdx);
+      extremes.add(maxIdx);
     }
-    return visible;
+
+    return Array.from(extremes);
   }
 
   /**
-   * Compute the horizon edges from the visible faces
-   * @param visible Array of visible face indices
-   * @param pointIndex Index of the point
-   * @return Array of horizon edges
-   **/
-  private computeHorizon(
-    visible: number[],
-    pointIndex: number,
-  ): [number, number][] {
-    const edges: [number, number][] = [];
-    const faceSet = new Set(visible);
+   * Check if tetrahedron is valid (non-degenerate)
+   */
+  private isValidTetrahedron(tetra: number[]): boolean {
+    const [a, b, c, d] = tetra;
+    const ab = this.vertices[b].clone().sub(this.vertices[a]);
+    const ac = this.vertices[c].clone().sub(this.vertices[a]);
+    const ad = this.vertices[d].clone().sub(this.vertices[a]);
 
-    for (const fi of visible) {
-      const [a, b, c] = this.faces[fi];
-      const triEdges: [number, number][] = [
-        [a, b],
-        [b, c],
-        [c, a],
-      ];
+    const volume = Math.abs(ab.dotProduct(ac.crossProduct(ad)));
+    return volume > 1e-12;
+  }
 
-      for (const [u, v] of triEdges) {
-        const opposite = this.findOppositeFace(u, v, fi);
-        if (opposite === -1 || !faceSet.has(opposite)) edges.push([u, v]);
+  /**
+   * Create initial faces from tetrahedron
+   */
+  private createInitialFaces(tetra: number[]): void {
+    const faces = [
+      { indices: [tetra[0], tetra[1], tetra[2]], normal: new Vector3(0, 0, 0) },
+      { indices: [tetra[0], tetra[3], tetra[1]], normal: new Vector3(0, 0, 0) },
+      { indices: [tetra[0], tetra[2], tetra[3]], normal: new Vector3(0, 0, 0) },
+      { indices: [tetra[1], tetra[3], tetra[2]], normal: new Vector3(0, 0, 0) },
+    ];
+
+    // Compute proper normals (facing outward)
+    for (const face of faces) {
+      face.normal = this.computeFaceNormal(face.indices);
+      // Ensure normal points outward
+      if (!this.isNormalOutward(face)) {
+        face.indices.reverse();
+        face.normal = this.computeFaceNormal(face.indices);
       }
     }
+
+    this.faces = faces;
+  }
+
+  /**
+   * Add remaining points to the hull
+   */
+  private addRemainingPoints(): void {
+    const unassigned = this.vertices
+      .map((_, i) => i)
+      .filter((i) => !this.faces.flatMap((f) => f.indices).includes(i));
+
+    for (const pointIdx of unassigned) {
+      this.addPointToHull(pointIdx);
+    }
+  }
+
+  /**
+   * Add a single point to the convex hull
+   */
+  private addPointToHull(pointIdx: number): void {
+    const visibleFaces: number[] = [];
+
+    // Find faces visible from the point
+    for (let i = 0; i < this.faces.length; i++) {
+      const face = this.faces[i];
+      const dist = this.distanceToFace(pointIdx, face);
+      if (dist > 1e-12) {
+        visibleFaces.push(i);
+      }
+    }
+
+    if (visibleFaces.length === 0) return; // Point inside hull
+
+    // Find horizon edges
+    const horizon = this.findHorizonEdges(visibleFaces);
+
+    // Remove visible faces
+    this.faces = this.faces.filter((_, i) => !visibleFaces.includes(i));
+
+    // Add new faces from horizon to point
+    for (const edge of horizon) {
+      const newFace = {
+        indices: [edge[0], edge[1], pointIdx],
+        normal: new Vector3(0, 0, 0),
+      };
+      newFace.normal = this.computeFaceNormal(newFace.indices);
+      this.faces.push(newFace);
+    }
+  }
+
+  /**
+   * Find horizon edges between visible and non-visible faces
+   */
+  private findHorizonEdges(visibleFaces: number[]): [number, number][] {
+    const horizon: [number, number][] = [];
+    const visibleSet = new Set(visibleFaces);
+
+    for (const faceIdx of visibleFaces) {
+      const face = this.faces[faceIdx];
+      const edges = this.getFaceEdges(face);
+
+      for (const edge of edges) {
+        const oppositeFace = this.findOppositeFace(edge, faceIdx);
+        if (oppositeFace === -1 || !visibleSet.has(oppositeFace)) {
+          horizon.push(edge);
+        }
+      }
+    }
+
+    return horizon;
+  }
+
+  /**
+   * Get edges of a face as [start, end] pairs
+   */
+  private getFaceEdges(face: Face): [number, number][] {
+    const edges: [number, number][] = [];
+    const n = face.indices.length;
+
+    for (let i = 0; i < n; i++) {
+      edges.push([face.indices[i], face.indices[(i + 1) % n]]);
+    }
+
     return edges;
   }
 
   /**
-   * Remove faces by their indices
-   * @param indices Array of face indices to remove
-   **/
-  private removeFaces(indices: number[]): void {
-    this.faces = this.faces.filter((_, fi) => !indices.includes(fi));
-  }
+   * Find face sharing an edge but different from excluded face
+   */
+  private findOppositeFace(
+    edge: [number, number],
+    excludeFace: number,
+  ): number {
+    const [u, v] = edge;
 
-  /**
-   * Add new faces from the horizon edges to a point
-   * @param horizon Array of horizon edges
-   * @param pointIndex Index of the point
-   **/
-  private addNewFaces(horizon: [number, number][], pointIndex: number): void {
-    for (const [u, v] of horizon) this.faces.push([u, v, pointIndex]);
-  }
+    for (let i = 0; i < this.faces.length; i++) {
+      if (i === excludeFace) continue;
 
-  /**
-   * Find the face opposite to the edge (u, v) excluding a specific face
-   * @param u First vertex of the edge
-   * @param v Second vertex of the edge
-   * @param exclude Face index to exclude from the search
-   * @return Index of the opposite face or -1 if not found
-   **/
-  private findOppositeFace(u: number, v: number, exclude: number): number {
-    for (let fi = 0; fi < this.faces.length; fi++) {
-      if (fi === exclude) continue;
-      const face = this.faces[fi];
-      if (face.includes(u) && face.includes(v)) return fi;
+      const face = this.faces[i];
+      if (face.indices.includes(u) && face.indices.includes(v)) {
+        return i;
+      }
     }
+
     return -1;
   }
 
   /**
-   * Compute the normal of a face defined by three vertex indices
-   * @param i1 Index of the first vertex
-   * @param i2 Index of the second vertex
-   * @param i3 Index of the third vertex
-   * @return Normal vector of the face
-   **/
-  private computeNormal(i1: number, i2: number, i3: number): Vector3 {
-    const v1 = this.vertices[i1];
-    const v2 = this.vertices[i2];
-    const v3 = this.vertices[i3];
-    return v2.clone().sub(v1).crossProduct(v3.clone().sub(v1)).normalize();
+   * Compute face normal (assuming CCW winding)
+   */
+  private computeFaceNormal(indices: number[]): Vector3 {
+    const v0 = this.vertices[indices[0]];
+    const v1 = this.vertices[indices[1]];
+    const v2 = this.vertices[indices[2]];
+
+    return v1.clone().sub(v0).crossProduct(v2.clone().sub(v0)).normalize();
   }
 
   /**
-   * Returns merged coplanar faces without modifying this.faces
+   * Check if face normal points outward
    */
-  public getMergedCoplanarFaces(epsilon: number = 1e-6): Face[] {
-    type TriFace = { indices: number[]; normal: Vector3 };
+  private isNormalOutward(face: Face): boolean {
+    // Find a point definitely inside the hull (average of vertices)
+    const interior = new Vector3(0, 0, 0);
+    const count = Math.min(10, this.vertices.length); // Sample some vertices
+    for (let i = 0; i < count; i++) {
+      interior.add(this.vertices[i]);
+    }
+    interior.scale(1 / count);
 
-    const triFaces: TriFace[] = this.faces.map((f) => ({
-      indices: f,
-      normal: this.computeNormal(f[0], f[1], f[2]),
-    }));
+    // Vector from face to interior point
+    const toInterior = interior.clone().sub(this.vertices[face.indices[0]]);
 
-    const merged: Face[] = [];
-    const used = new Set<number>();
+    // If dot product is positive, normal points toward interior (should be flipped)
+    return face.normal.dotProduct(toInterior) < 0;
+  }
 
-    for (let i = 0; i < triFaces.length; i++) {
-      if (used.has(i)) continue;
+  /**
+   * Distance from point to face plane (signed)
+   */
+  private distanceToFace(pointIdx: number, face: Face): number {
+    const point = this.vertices[pointIdx];
+    const facePoint = this.vertices[face.indices[0]];
+    return face.normal.dotProduct(point.clone().sub(facePoint));
+  }
 
-      const group: number[][] = [triFaces[i].indices.slice()];
-      const normal = triFaces[i].normal.clone();
-      used.add(i);
+  /**
+   * Merge coplanar adjacent faces
+   */
+  private mergeCoplanarFaces(epsilon: number = 1e-6): void {
+    let changed = true;
 
-      for (let j = i + 1; j < triFaces.length; j++) {
-        if (used.has(j)) continue;
-        const dot = triFaces[i].normal.dotProduct(triFaces[j].normal);
-        if (Math.abs(dot - 1) < epsilon) {
-          if (this.facesShareEdge(triFaces[i].indices, triFaces[j].indices)) {
-            group.push(triFaces[j].indices.slice());
-            used.add(j);
+    while (changed) {
+      changed = false;
+
+      for (let i = 0; i < this.faces.length && !changed; i++) {
+        for (let j = i + 1; j < this.faces.length && !changed; j++) {
+          if (
+            this.areFacesCoplanar(this.faces[i], this.faces[j], epsilon) &&
+            this.facesShareEdge(this.faces[i], this.faces[j])
+          ) {
+            const merged = this.mergeFaces(this.faces[i], this.faces[j]);
+            if (merged) {
+              this.faces.splice(j, 1);
+              this.faces.splice(i, 1);
+              this.faces.push(merged);
+              changed = true;
+            }
           }
         }
       }
-
-      const polygonIndices = this.mergeTrianglesIntoPolygon(group);
-
-      // Wrap as Face
-      merged.push({ indices: polygonIndices, normal });
     }
+  }
 
-    return merged;
+  /**
+   * Check if two faces are coplanar
+   */
+  private areFacesCoplanar(face1: Face, face2: Face, epsilon: number): boolean {
+    // Check normals are parallel
+    const dot = Math.abs(face1.normal.dotProduct(face2.normal));
+    if (Math.abs(dot - 1) > epsilon) return false;
+
+    // Check distance between planes is zero
+    const point1 = this.vertices[face1.indices[0]];
+    const point2 = this.vertices[face2.indices[0]];
+    const vec = point2.clone().sub(point1);
+    const dist = Math.abs(face1.normal.dotProduct(vec));
+
+    return dist < epsilon;
   }
 
   /**
    * Check if two faces share an edge
-   * @param a First face (array of vertex indices)
-   * @param b Second face (array of vertex indices)
-   * @return True if they share an edge, false otherwise
-   **/
-  private facesShareEdge(a: number[], b: number[]): boolean {
-    let shared = 0;
-    for (const v of a) if (b.includes(v)) shared++;
-    return shared >= 2;
+   */
+  private facesShareEdge(face1: Face, face2: Face): boolean {
+    const set1 = new Set(face1.indices);
+    let sharedCount = 0;
+
+    for (const idx of face2.indices) {
+      if (set1.has(idx)) sharedCount++;
+    }
+
+    return sharedCount >= 2; // Share at least an edge
   }
 
   /**
-   * Merge triangles into a single polygon by walking around the border edges
-   * @param triangles Array of triangles (each triangle is an array of 3 vertex indices)
-   * @return Array of vertex indices forming the merged polygon
+   * Merge two adjacent faces into one polygon
    */
-  private mergeTrianglesIntoPolygon(triangles: number[][]): number[] {
-    const edges: Map<string, [number, number]> = new Map();
-    const count: Map<string, number> = new Map();
+  private mergeFaces(face1: Face, face2: Face): Face | null {
+    const allVertices = [...new Set([...face1.indices, ...face2.indices])];
 
-    const key = (u: number, v: number) => `${Math.min(u, v)}-${Math.max(u, v)}`;
+    if (allVertices.length < 3) return null;
 
-    for (const tri of triangles) {
-      for (let i = 0; i < 3; i++) {
-        const u = tri[i];
-        const v = tri[(i + 1) % 3];
-        const k = key(u, v);
-        count.set(k, (count.get(k) || 0) + 1);
-        edges.set(k, [u, v]);
-      }
+    // Simple convex polygon merge - for complex cases, use polygon union algorithm
+    const mergedIndices = this.orderVerticesConvex(allVertices);
+
+    if (mergedIndices.length < 3) return null;
+
+    return {
+      indices: mergedIndices,
+      normal: face1.normal.clone(),
+    };
+  }
+
+  /**
+   * Order vertices to form a convex polygon around their centroid
+   */
+  private orderVerticesConvex(indices: number[]): number[] {
+    if (indices.length <= 3) return indices;
+
+    const centroid = new Vector3(0, 0, 0);
+    for (const idx of indices) {
+      centroid.add(this.vertices[idx]);
     }
+    centroid.scale(1 / indices.length);
 
-    // Border edges appear only once
-    const borderEdges = Array.from(edges.values()).filter(
-      (e) => count.get(key(e[0], e[1])) === 1,
-    );
+    // Project vertices to 2D plane and sort by angle
+    const normal = this.computeFaceNormal([indices[0], indices[1], indices[2]]);
+    const basisX = this.vertices[indices[1]]
+      .clone()
+      .sub(this.vertices[indices[0]])
+      .normalize();
+    const basisY = normal.crossProduct(basisX).normalize();
 
-    if (borderEdges.length === 0) return triangles[0];
+    const points2D = indices.map((idx) => {
+      const vec = this.vertices[idx].clone().sub(centroid);
+      return {
+        idx,
+        x: vec.dotProduct(basisX),
+        y: vec.dotProduct(basisY),
+        angle: Math.atan2(vec.dotProduct(basisY), vec.dotProduct(basisX)),
+      };
+    });
 
-    // Build adjacency map
-    const adj = new Map<number, Set<number>>();
-    for (const [u, v] of borderEdges) {
-      if (!adj.has(u)) adj.set(u, new Set());
-      if (!adj.has(v)) adj.set(v, new Set());
-      adj.get(u)!.add(v);
-      adj.get(v)!.add(u);
-    }
+    points2D.sort((a, b) => a.angle - b.angle);
+    return points2D.map((p) => p.idx);
+  }
 
-    // Walk around edges to form polygon
-    const polygon: number[] = [];
-    let start = borderEdges[0][0];
-    polygon.push(start);
-    let prev = -1;
-    let current = start;
+  /**
+   * Get the final faces (already merged)
+   */
+  public getFaces(): Face[] {
+    return this.faces;
+  }
 
-    while (true) {
-      const neighbors = Array.from(adj.get(current)!);
-      let next = neighbors.find((n) => n !== prev);
-      if (next === undefined || next === start) break;
-      polygon.push(next);
-      prev = current;
-      current = next;
-    }
-
-    return polygon;
+  /**
+   * Get vertices
+   */
+  public getVertices(): Vector3[] {
+    return this.vertices;
   }
 }

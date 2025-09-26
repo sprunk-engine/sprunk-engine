@@ -14,7 +14,7 @@ export class Polyhedron implements Shape {
     if (this.faces.length == 0) {
       const hull = new QuickHull3D(vertices);
       hull.build();
-      this.faces = hull.getMergedCoplanarFaces();
+      this.faces = hull.getFaces();
     }
   }
 
@@ -55,38 +55,32 @@ export class Polyhedron implements Shape {
   }
 
   public getGravitationCenter(): Vector3 {
-    // reference point: average of vertices (inside for convex polyhedron)
-    const ref = new Vector3(0, 0, 0);
-    for (const v of this.vertices) {
-      ref.add(v.clone());
-    }
-    ref.scale(1 / this.vertices.length);
+    // Compute interior point (average of vertices)
+    const avgVertex = new Vector3(0, 0, 0);
+    for (const v of this.vertices) avgVertex.add(v);
+    avgVertex.scale(1 / this.vertices.length);
+    const ref = avgVertex;
 
     let totalVolume = 0;
     const weighted = new Vector3(0, 0, 0);
 
     for (const face of this.faces) {
       if (face.indices.length < 3) continue;
+
       const i0 = face.indices[0];
-
       for (let k = 1; k < face.indices.length - 1; k++) {
-        const ia = i0;
-        const ib = face.indices[k];
-        const ic = face.indices[k + 1];
+        const a = this.vertices[i0];
+        const b = this.vertices[face.indices[k]];
+        const c = this.vertices[face.indices[k + 1]];
 
-        const a = this.vertices[ia];
-        const b = this.vertices[ib];
-        const c = this.vertices[ic];
-
-        // relative vectors from reference
         const va = a.clone().sub(ref);
         const vb = b.clone().sub(ref);
         const vc = c.clone().sub(ref);
 
-        // signed volume of tetrahedron
+        // signed volume of tetrahedron (ref, a, b, c)
         const vol = va.dotProduct(vb.crossProduct(vc)) / 6;
 
-        // centroid of tetrahedron
+        // centroid of tetrahedron = average of 4 vertices
         const tetCentroid = ref
           .clone()
           .add(a)
@@ -94,31 +88,19 @@ export class Polyhedron implements Shape {
           .add(c)
           .scale(1 / 4);
 
-        // accumulate weighted centroid
         weighted.add(tetCentroid.scale(vol));
         totalVolume += vol;
       }
     }
 
     if (Math.abs(totalVolume) < 1e-12) {
-      // fallback: average of vertices
+      // fallback to average of vertices
       const avg = new Vector3(0, 0, 0);
-      for (const v of this.vertices) avg.add(v.clone());
+      for (const v of this.vertices) avg.add(v);
       avg.scale(1 / this.vertices.length);
-      return avg;
+      return avg.round(6);
     }
 
-    const centroid = weighted.scale(1 / totalVolume);
-
-    // fix floating point noise
-    const eps = 1e-9;
-    centroid.x =
-      Math.abs(centroid.x) < eps ? 0 : Math.round(centroid.x / eps) * eps;
-    centroid.y =
-      Math.abs(centroid.y) < eps ? 0 : Math.round(centroid.y / eps) * eps;
-    centroid.z =
-      Math.abs(centroid.z) < eps ? 0 : Math.round(centroid.z / eps) * eps;
-
-    return centroid;
+    return weighted.scale(1 / totalVolume).round(6);
   }
 }

@@ -44,8 +44,8 @@ export class GjkCollisionHandler implements CollisionHandler {
 
     // Set initial support point
     let d = centerB.clone().sub(centerA); // Direction from A to B
-    this.simplex.push(this.support(a, b, d)); // Initial support point
 
+    this.simplex.push(this.support(a, b, d)); // Initial support point
     d = this.simplex[0]!.clone().scale(-1); // Reverse direction (passing through the origin)
 
     // Set second support point
@@ -183,7 +183,7 @@ export class GjkCollisionHandler implements CollisionHandler {
       .clone()
       .add(b.getWorldPosition());
 
-    return pointA.sub(pointB);
+    return pointA.clone().sub(pointB);
   }
 
   /**

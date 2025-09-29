@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { Vector3 } from "@core/MathStructures/Vector3";
-import { QuickHull3D } from "@extensions/PhysicsEngine/Shapes/QuickHull3D.ts";
+import { QuickHullFactory } from "@extensions/PhysicsEngine/Shapes/QuickHullFactory.ts";
 import { Face } from "@extensions/PhysicsEngine/Shapes/Face.ts";
 
-describe("QuickHull3D", (): void => {
+describe("QuickHull", (): void => {
   /**
    * Tests if we find the correct faces of a box.
    */
@@ -20,7 +20,7 @@ describe("QuickHull3D", (): void => {
       new Vector3(0, 2, 2),
     ];
 
-    const hull = new QuickHull3D(vertices);
+    const hull = QuickHullFactory.buildHull(vertices);
 
     // When
     hull.build();
@@ -56,7 +56,7 @@ describe("QuickHull3D", (): void => {
       new Vector3(1, 1, 4),
     ];
 
-    const hull = new QuickHull3D(vertices);
+    const hull = QuickHullFactory.buildHull(vertices);
 
     // When
     hull.build();
@@ -91,7 +91,7 @@ describe("QuickHull3D", (): void => {
       new Vector3(0.5, 0.5, 2),
     ];
 
-    const hull = new QuickHull3D(vertices);
+    const hull = QuickHullFactory.buildHull(vertices);
 
     // When
     hull.build();

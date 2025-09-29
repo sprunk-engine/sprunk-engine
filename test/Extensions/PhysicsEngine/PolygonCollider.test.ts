@@ -11,8 +11,9 @@ describe("PolygonCollider", (): void => {
   beforeEach(() => {
     vertices = [
       new Vector3(1, 2, 3),
-      new Vector3(3, 4, 5),
-      new Vector3(5, 6, 7),
+      new Vector3(3, 4, 9),
+      new Vector3(5, 8, 27),
+      new Vector3(7, 16, 81),
     ];
     gameObject = new GameObject();
     polygonCollider = new PolygonCollider(vertices);
@@ -29,11 +30,13 @@ describe("PolygonCollider", (): void => {
       polygonCollider.getVerticesWithTransform();
 
     expect(transformedPolygonCollider[0]).toEqual(new Vector3(2, 6, 12));
-    expect(transformedPolygonCollider[1]).toEqual(new Vector3(6, 12, 20));
-    expect(transformedPolygonCollider[2]).toEqual(new Vector3(10, 18, 28));
+    expect(transformedPolygonCollider[1]).toEqual(new Vector3(6, 12, 36));
+    expect(transformedPolygonCollider[2]).toEqual(new Vector3(10, 24, 108));
+    expect(transformedPolygonCollider[3]).toEqual(new Vector3(14, 48, 324));
     expect(polygonCollider.vertices[0]).toBe(vertices[0]);
     expect(polygonCollider.vertices[1]).toBe(vertices[1]);
     expect(polygonCollider.vertices[2]).toBe(vertices[2]);
+    expect(polygonCollider.vertices[3]).toBe(vertices[3]);
   });
 
   /**
@@ -51,15 +54,20 @@ describe("PolygonCollider", (): void => {
 
     expect(transformedPolygonCollider[1].x).toBeCloseTo(-4);
     expect(transformedPolygonCollider[1].y).toBeCloseTo(3);
-    expect(transformedPolygonCollider[1].z).toBeCloseTo(5);
+    expect(transformedPolygonCollider[1].z).toBeCloseTo(9);
 
-    expect(transformedPolygonCollider[2].x).toBeCloseTo(-6);
+    expect(transformedPolygonCollider[2].x).toBeCloseTo(-8);
     expect(transformedPolygonCollider[2].y).toBeCloseTo(5);
-    expect(transformedPolygonCollider[2].z).toBeCloseTo(7);
+    expect(transformedPolygonCollider[2].z).toBeCloseTo(27);
+
+    expect(transformedPolygonCollider[3].x).toBeCloseTo(-16);
+    expect(transformedPolygonCollider[3].y).toBeCloseTo(7);
+    expect(transformedPolygonCollider[3].z).toBeCloseTo(81);
 
     expect(polygonCollider.vertices[0]).toBe(vertices[0]);
     expect(polygonCollider.vertices[1]).toBe(vertices[1]);
     expect(polygonCollider.vertices[2]).toBe(vertices[2]);
+    expect(polygonCollider.vertices[3]).toBe(vertices[3]);
   });
 
   /**
@@ -74,8 +82,10 @@ describe("PolygonCollider", (): void => {
     expect(polygonCollider.vertices[0]).toBe(vertices[0]);
     expect(polygonCollider.vertices[1]).toBe(vertices[1]);
     expect(polygonCollider.vertices[2]).toBe(vertices[2]);
+    expect(polygonCollider.vertices[3]).toBe(vertices[3]);
     expect(transformedPolygonCollider[0]).toEqual(new Vector3(2, 4, 6));
-    expect(transformedPolygonCollider[1]).toEqual(new Vector3(4, 6, 8));
-    expect(transformedPolygonCollider[2]).toEqual(new Vector3(6, 8, 10));
+    expect(transformedPolygonCollider[1]).toEqual(new Vector3(4, 6, 12));
+    expect(transformedPolygonCollider[2]).toEqual(new Vector3(6, 10, 30));
+    expect(transformedPolygonCollider[3]).toEqual(new Vector3(8, 18, 84));
   });
 });

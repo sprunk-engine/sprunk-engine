@@ -138,6 +138,7 @@ describe("PhysicsGameEngineComponent", (): void => {
       new Vector3(4, 0, 1),
       new Vector3(6, 5, 2),
       new Vector3(0, 4, 3),
+      new Vector3(4, 5, 3),
     ];
     const polygonCollider2 = new PolygonCollider(vertices2);
     object2.addBehavior(polygonCollider2);

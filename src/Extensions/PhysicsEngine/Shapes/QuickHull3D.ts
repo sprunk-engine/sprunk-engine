@@ -5,6 +5,11 @@ export class QuickHull3D {
   private vertices: Vector3[];
   private faces: Face[];
 
+  /**
+   * Creates a new QuickHull3D instance for building convex hulls from 3D points
+   * @param vertices - Array of Vector3 points to compute convex hull from
+   * @throws Error if fewer than 4 points are provided
+   */
   constructor(vertices: Vector3[]) {
     if (vertices.length < 4) throw new Error("At least 4 points are required");
     this.vertices = vertices;
@@ -13,6 +18,7 @@ export class QuickHull3D {
 
   /**
    * Build convex hull using a robust incremental algorithm
+   * @throws Error if points are degenerate (coplanar or collinear)
    */
   public build(): void {
     this.faces = [];
@@ -34,18 +40,24 @@ export class QuickHull3D {
   }
 
   /**
-   * Find initial tetrahedron that contains all points
+   * Find initial tetrahedron that contains all points - IMPROVED VERSION
+   * @returns Array of 4 vertex indices forming a valid tetrahedron, or null if none found
    */
   private findInitialSimplex(): number[] | null {
-    // Find extreme points along each axis
-    const extremes = this.findExtremePoints();
+    // Get more candidate points to ensure we find a valid tetrahedron
+    const candidates = this.findCandidatePoints();
 
-    // Try different combinations to find a non-degenerate tetrahedron
-    for (let i = 0; i < extremes.length; i++) {
-      for (let j = i + 1; j < extremes.length; j++) {
-        for (let k = j + 1; k < extremes.length; k++) {
-          for (let l = k + 1; l < extremes.length; l++) {
-            const tetra = [extremes[i], extremes[j], extremes[k], extremes[l]];
+    // Try all combinations systematically
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        for (let k = j + 1; k < candidates.length; k++) {
+          for (let l = k + 1; l < candidates.length; l++) {
+            const tetra = [
+              candidates[i],
+              candidates[j],
+              candidates[k],
+              candidates[l],
+            ];
             if (this.isValidTetrahedron(tetra)) {
               return tetra;
             }
@@ -58,12 +70,13 @@ export class QuickHull3D {
   }
 
   /**
-   * Find extreme points along each axis
+   * Find candidate points for initial simplex - MORE ROBUST VERSION
+   * @returns Array of vertex indices that are good candidates for forming the initial tetrahedron
    */
-  private findExtremePoints(): number[] {
-    const extremes = new Set<number>();
+  private findCandidatePoints(): number[] {
+    const candidates = new Set<number>();
 
-    // Add min/max for each axis
+    // Add min/max for each axis (original logic)
     for (const axis of ["x", "y", "z"] as const) {
       let minIdx = 0;
       let maxIdx = 0;
@@ -73,28 +86,70 @@ export class QuickHull3D {
         if (this.vertices[i][axis] > this.vertices[maxIdx][axis]) maxIdx = i;
       }
 
-      extremes.add(minIdx);
-      extremes.add(maxIdx);
+      candidates.add(minIdx);
+      candidates.add(maxIdx);
     }
 
-    return Array.from(extremes);
+    // If we don't have enough unique points, add more from the vertices
+    if (candidates.size < 4) {
+      // Add points that are farthest from the centroid
+      const centroid = this.computeCentroid();
+      const distances = this.vertices.map((v, i) => ({
+        index: i,
+        distance: v.clone().sub(centroid).length ^ 2,
+      }));
+
+      distances.sort((a, b) => b.distance - a.distance);
+
+      for (const item of distances) {
+        candidates.add(item.index);
+        if (candidates.size >= Math.min(8, this.vertices.length)) break;
+      }
+    }
+
+    return Array.from(candidates);
   }
 
   /**
-   * Check if tetrahedron is valid (non-degenerate)
+   * Compute centroid of all points
+   * @returns Vector3 representing the centroid of all vertices
+   */
+  private computeCentroid(): Vector3 {
+    const centroid = new Vector3(0, 0, 0);
+    for (const vertex of this.vertices) {
+      centroid.add(vertex);
+    }
+    return centroid.scale(1 / this.vertices.length);
+  }
+
+  /**
+   * Check if tetrahedron is valid (non-degenerate) - MORE ROBUST VERSION
+   * @param tetra - Array of 4 vertex indices to check
+   * @returns True if tetrahedron has sufficient volume (non-degenerate)
    */
   private isValidTetrahedron(tetra: number[]): boolean {
     const [a, b, c, d] = tetra;
-    const ab = this.vertices[b].clone().sub(this.vertices[a]);
-    const ac = this.vertices[c].clone().sub(this.vertices[a]);
-    const ad = this.vertices[d].clone().sub(this.vertices[a]);
+    const v0 = this.vertices[a];
+    const v1 = this.vertices[b];
+    const v2 = this.vertices[c];
+    const v3 = this.vertices[d];
+
+    const ab = v1.clone().sub(v0);
+    const ac = v2.clone().sub(v0);
+    const ad = v3.clone().sub(v0);
 
     const volume = Math.abs(ab.dotProduct(ac.crossProduct(ad)));
-    return volume > 1e-12;
+
+    // Use a relative tolerance based on the size of the vectors
+    const size = Math.max(ab.length, ac.length, ad.length);
+    const relativeTolerance = size * 1e-10;
+
+    return volume > Math.max(1e-12, relativeTolerance);
   }
 
   /**
-   * Create initial faces from tetrahedron
+   * Create initial faces from tetrahedron - IMPROVED ORIENTATION
+   * @param tetra - Array of 4 vertex indices forming the initial tetrahedron
    */
   private createInitialFaces(tetra: number[]): void {
     const faces = [
@@ -104,11 +159,18 @@ export class QuickHull3D {
       { indices: [tetra[1], tetra[3], tetra[2]], normal: new Vector3(0, 0, 0) },
     ];
 
-    // Compute proper normals (facing outward)
+    // Compute normals and ensure consistent winding
+    const centroid = this.computeTetrahedronCentroid(tetra);
+
     for (const face of faces) {
       face.normal = this.computeFaceNormal(face.indices);
-      // Ensure normal points outward
-      if (!this.isNormalOutward(face)) {
+
+      // Ensure normal points outward using tetrahedron centroid
+      const faceCenter = this.computeFaceCenter(face.indices);
+      const toCentroid = centroid.clone().sub(faceCenter);
+
+      if (face.normal.dotProduct(toCentroid) > 0) {
+        // Normal points inward, reverse winding
         face.indices.reverse();
         face.normal = this.computeFaceNormal(face.indices);
       }
@@ -118,7 +180,33 @@ export class QuickHull3D {
   }
 
   /**
-   * Add remaining points to the hull
+   * Compute centroid of tetrahedron
+   * @param tetra - Array of 4 vertex indices
+   * @returns Vector3 representing the centroid of the tetrahedron
+   */
+  private computeTetrahedronCentroid(tetra: number[]): Vector3 {
+    const centroid = new Vector3(0, 0, 0);
+    for (const idx of tetra) {
+      centroid.add(this.vertices[idx]);
+    }
+    return centroid.scale(1 / tetra.length);
+  }
+
+  /**
+   * Compute center of a face
+   * @param indices - Array of vertex indices forming the face
+   * @returns Vector3 representing the center of the face
+   */
+  private computeFaceCenter(indices: number[]): Vector3 {
+    const center = new Vector3(0, 0, 0);
+    for (const idx of indices) {
+      center.add(this.vertices[idx]);
+    }
+    return center.scale(1 / indices.length);
+  }
+
+  /**
+   * Add remaining points to the convex hull incrementally
    */
   private addRemainingPoints(): void {
     const unassigned = this.vertices
@@ -132,11 +220,11 @@ export class QuickHull3D {
 
   /**
    * Add a single point to the convex hull
+   * @param pointIdx - Index of the vertex to add to the hull
    */
   private addPointToHull(pointIdx: number): void {
     const visibleFaces: number[] = [];
 
-    // Find faces visible from the point
     for (let i = 0; i < this.faces.length; i++) {
       const face = this.faces[i];
       const dist = this.distanceToFace(pointIdx, face);
@@ -145,15 +233,11 @@ export class QuickHull3D {
       }
     }
 
-    if (visibleFaces.length === 0) return; // Point inside hull
+    if (visibleFaces.length === 0) return;
 
-    // Find horizon edges
     const horizon = this.findHorizonEdges(visibleFaces);
-
-    // Remove visible faces
     this.faces = this.faces.filter((_, i) => !visibleFaces.includes(i));
 
-    // Add new faces from horizon to point
     for (const edge of horizon) {
       const newFace = {
         indices: [edge[0], edge[1], pointIdx],
@@ -166,6 +250,8 @@ export class QuickHull3D {
 
   /**
    * Find horizon edges between visible and non-visible faces
+   * @param visibleFaces - Array of indices of faces visible from the current point
+   * @returns Array of edges forming the horizon
    */
   private findHorizonEdges(visibleFaces: number[]): [number, number][] {
     const horizon: [number, number][] = [];
@@ -188,6 +274,8 @@ export class QuickHull3D {
 
   /**
    * Get edges of a face as [start, end] pairs
+   * @param face - The face to extract edges from
+   * @returns Array of edges as [startIndex, endIndex] pairs
    */
   private getFaceEdges(face: Face): [number, number][] {
     const edges: [number, number][] = [];
@@ -202,6 +290,9 @@ export class QuickHull3D {
 
   /**
    * Find face sharing an edge but different from excluded face
+   * @param edge - The edge to find opposite face for
+   * @param excludeFace - Index of face to exclude from search
+   * @returns Index of opposite face, or -1 if not found
    */
   private findOppositeFace(
     edge: [number, number],
@@ -223,6 +314,8 @@ export class QuickHull3D {
 
   /**
    * Compute face normal (assuming CCW winding)
+   * @param indices - Array of 3 vertex indices forming the face
+   * @returns Vector3 representing the normalized face normal
    */
   private computeFaceNormal(indices: number[]): Vector3 {
     const v0 = this.vertices[indices[0]];
@@ -233,26 +326,10 @@ export class QuickHull3D {
   }
 
   /**
-   * Check if face normal points outward
-   */
-  private isNormalOutward(face: Face): boolean {
-    // Find a point definitely inside the hull (average of vertices)
-    const interior = new Vector3(0, 0, 0);
-    const count = Math.min(10, this.vertices.length); // Sample some vertices
-    for (let i = 0; i < count; i++) {
-      interior.add(this.vertices[i]);
-    }
-    interior.scale(1 / count);
-
-    // Vector from face to interior point
-    const toInterior = interior.clone().sub(this.vertices[face.indices[0]]);
-
-    // If dot product is positive, normal points toward interior (should be flipped)
-    return face.normal.dotProduct(toInterior) < 0;
-  }
-
-  /**
    * Distance from point to face plane (signed)
+   * @param pointIdx - Index of the point to measure distance from
+   * @param face - The face to measure distance to
+   * @returns Signed distance from point to face plane
    */
   private distanceToFace(pointIdx: number, face: Face): number {
     const point = this.vertices[pointIdx];
@@ -262,6 +339,7 @@ export class QuickHull3D {
 
   /**
    * Merge coplanar adjacent faces
+   * @param epsilon - Tolerance for coplanarity check (default: 1e-6)
    */
   private mergeCoplanarFaces(epsilon: number = 1e-6): void {
     let changed = true;
@@ -290,13 +368,15 @@ export class QuickHull3D {
 
   /**
    * Check if two faces are coplanar
+   * @param face1 - First face to check
+   * @param face2 - Second face to check
+   * @param epsilon - Tolerance for coplanarity check
+   * @returns True if faces are coplanar within tolerance
    */
   private areFacesCoplanar(face1: Face, face2: Face, epsilon: number): boolean {
-    // Check normals are parallel
     const dot = Math.abs(face1.normal.dotProduct(face2.normal));
     if (Math.abs(dot - 1) > epsilon) return false;
 
-    // Check distance between planes is zero
     const point1 = this.vertices[face1.indices[0]];
     const point2 = this.vertices[face2.indices[0]];
     const vec = point2.clone().sub(point1);
@@ -307,6 +387,9 @@ export class QuickHull3D {
 
   /**
    * Check if two faces share an edge
+   * @param face1 - First face to check
+   * @param face2 - Second face to check
+   * @returns True if faces share at least 2 vertices (an edge)
    */
   private facesShareEdge(face1: Face, face2: Face): boolean {
     const set1 = new Set(face1.indices);
@@ -316,18 +399,20 @@ export class QuickHull3D {
       if (set1.has(idx)) sharedCount++;
     }
 
-    return sharedCount >= 2; // Share at least an edge
+    return sharedCount >= 2;
   }
 
   /**
    * Merge two adjacent faces into one polygon
+   * @param face1 - First face to merge
+   * @param face2 - Second face to merge
+   * @returns Merged face or null if merge failed
    */
   private mergeFaces(face1: Face, face2: Face): Face | null {
     const allVertices = [...new Set([...face1.indices, ...face2.indices])];
 
     if (allVertices.length < 3) return null;
 
-    // Simple convex polygon merge - for complex cases, use polygon union algorithm
     const mergedIndices = this.orderVerticesConvex(allVertices);
 
     if (mergedIndices.length < 3) return null;
@@ -340,6 +425,8 @@ export class QuickHull3D {
 
   /**
    * Order vertices to form a convex polygon around their centroid
+   * @param indices - Array of vertex indices to order
+   * @returns Ordered array of vertex indices forming a convex polygon
    */
   private orderVerticesConvex(indices: number[]): number[] {
     if (indices.length <= 3) return indices;
@@ -350,7 +437,6 @@ export class QuickHull3D {
     }
     centroid.scale(1 / indices.length);
 
-    // Project vertices to 2D plane and sort by angle
     const normal = this.computeFaceNormal([indices[0], indices[1], indices[2]]);
     const basisX = this.vertices[indices[1]]
       .clone()
@@ -373,14 +459,16 @@ export class QuickHull3D {
   }
 
   /**
-   * Get the final faces (already merged)
+   * Get the final faces of the convex hull
+   * @returns Array of Face objects representing the convex hull
    */
   public getFaces(): Face[] {
     return this.faces;
   }
 
   /**
-   * Get vertices
+   * Get the original vertices used to build the convex hull
+   * @returns Array of Vector3 vertices
    */
   public getVertices(): Vector3[] {
     return this.vertices;
